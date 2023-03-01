@@ -31,7 +31,7 @@ ResHEXCheckBox=1
 SaveBeforeCompile=1
 
 [MODULES]
-mod_count=14
+mod_count=15
 mod0=base.ini
 mod1=rcc_stm32f103xxx.ini
 mod2=flash_stm32f103xxx.ini
@@ -46,6 +46,7 @@ mod10=rtc.ini
 mod11=isr_full_LMHDD.ini
 mod12=main_mini.ini
 mod13=ld_stm32f103xBx.ini
+mod14=nvic.ini
 
 [OPENFILES]
 file0name=\core\stk\systick.asm

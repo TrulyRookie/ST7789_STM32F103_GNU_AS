@@ -169,7 +169,7 @@ LCD_Init:
                     BL              SYSTICK_DELAY
                     BL              ST_DISPON
                     BL              SYSTICK_DELAY
-                    LDR             R0, =#0x00FF00 @#0xFFF3BC
+                    LDR             R0, =#0xFFF3BC @#0x00FF00 @#0xFFF3BC
                     BL              LCD_Convert24bitColor
                     MOV             R0, R5
                     BL              LCD_Clear
