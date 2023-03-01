@@ -226,48 +226,46 @@ SendByDMA:
           LSL  R1, R1, R2     @ size in bytes dataCount<<dataSize
           BBP  r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
           LDR  R2, [ R3 ]     @ take DFF flag state
-          CBZ  R2, DMAArray_IsByte    @ if (DFF==0) goto isByte
+          CBZ  R2, DMAArray_Send    @ if (DFF==0) goto isByte
           BBP  R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N @ else configure DFF to byte sending
           STR  R11, [ R2 ]    @ SPI OFF
           STR  R11, [ R3 ]    @ DFF clear
           STR  R12, [ R2 ]    @ SPI ON
-          BBP R4, DMA1_BASE, DMA_CCR3, #10      @MSize low bit
+          BBP R4, DMA1_BASE, DMA_CCR3, 10      @MSize low bit
           STR R11, [R4] @8bit memory
-          BBP R4, DMA1_BASE, DMA_CCR3, #8      @PSize low bit
+          BBP R4, DMA1_BASE, DMA_CCR3, 8      @PSize low bit
           STR R11, [R4] @8bit peripheria
-DMAArray_IsByte:
-          LDR R2, =(DMA1+DMA_CNDTR3)
-          STR R1, [R2]
-          BL WAIT_TXE
-          BL SelectSlave
-          BBP R3, DMA1_BASE, DMA_CCR3, #0
-          STR R12, [R3] @DMA channel 3 ON
-          B   DMAArray_Return    @return;
+          b DMAArray_Send
 DMA_HWORD_SEND:
           BBP  r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
           LDR  R2, [ R3 ]
-          CBNZ  R2, DMAArray_IsHword    @ if (DFF == 1) goto isHWORD
+          CBNZ  R2, DMAArray_Send    @ if (DFF == 1) goto isHWORD
           BBP  R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N @ else configure DFF to HWORD sending
           STR  R11, [ R2 ]    @ SPI OFF
           STR  R12, [ R3 ]    @ DFF set
           STR  R12, [ R2 ]    @ SPI ON
-          BBP R4, DMA1_BASE, DMA_CCR3, #10      @MSize low bit
+          BBP R4, DMA1_BASE, DMA_CCR3, 10      @MSize low bit
           STR R12, [R4] @16bit memory
-          BBP R4, DMA1_BASE, DMA_CCR3, #8      @PSize low bit
+          BBP R4, DMA1_BASE, DMA_CCR3, 8      @PSize low bit
           STR R12, [R4] @16bit peripheria
-DMAArray_IsHword:
+DMAArray_Send:
           LDR R2, =(DMA1+DMA_CNDTR3)
           STR R1, [R2]
           BL WAIT_TXE
           BL  SelectSlave
-          BBP R3, DMA1_BASE, DMA_CCR3, #0
+          BBP R3, DMA1_BASE, DMA_CCR3, 0
           STR R12, [R3] @DMA channel 3 ON
-          BBP R3, DMA_BASE, DMA_ISR, DMA_ISR_TCIF3_N
+          BBP R3, DMA1_BASE, DMA_ISR, DMA_ISR_TCIF3_N
 DMAArray_Return:
           LDR R2, [R3]
           CMP R2, #1
           BNE DMAArray_Return
-
+          BBP R3, DMA1_BASE, DMA_IFCR, 8
+          STR R12, [r3]
+          STR R12, [r3,4]
+          STR R12, [r3,8]
+          BBP R3, DMA1_BASE, DMA_CCR3, 0
+          STR R11, [R3] @DMA channel 3 OFF
           POP  { R0 - R5, LR }
           BX  LR
 
