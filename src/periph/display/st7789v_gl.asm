@@ -85,7 +85,7 @@ LCD_MakeColor:
           BFI r5, r0, #11, #5
           BFI r5, r1, #5, #6
           BFI r5, r2, #0, #5
-          REV16 r0, r5
+          @REV16 r0, r5
           MOV r5, r0
      POP {r0-r2,LR}
      BX LR

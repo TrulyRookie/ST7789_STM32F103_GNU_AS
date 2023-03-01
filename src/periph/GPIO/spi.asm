@@ -238,7 +238,7 @@ SendArray_SendLoopByte:                          @ do{
 HWORD_send:
      BBP r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
      LDR r2, [r3]
-     CBNZ r3, SendArray_IsHword                  @ if (DFF == 1) goto isHWORD
+     CBNZ r2, SendArray_IsHword                  @ if (DFF == 1) goto isHWORD
      BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N   @ else configure DFF to HWORD sending
      STR r11, [r2]                               @ SPI OFF
      STR r12, [r3]                               @ DFF set
