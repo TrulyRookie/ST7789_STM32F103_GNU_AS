@@ -5,7 +5,7 @@
 .thumb              @ тип используемых инструкций Thumb
 .cpu cortex-m3      @ процессор
 
-.include "/src/periph/display/st7789v.inc"
+.include "/src/inc/st7789v.inc"
 
 .section .asmcode
 DATA_FOR_PVGAMCTRL: .byte 0xd0, 0x04, 0x0d, 0x11, 0x13, 0x2b, 0x3f, 0x54, 0x4c, 0x18, 0x0d, 0x0b, 0x1F, 0x23
@@ -54,7 +54,7 @@ LCD_Clear:
         MOVT r1, 0                 @YS
         BL LCD_SetViewport
      POP {r0,r1,LR}
-     PUSH {r0-r3,r5,LR}
+     PUSH {r0-r5,LR}
         MOV r2, r0
         LDR r4, =CANVAS_WIDTH
         MOV r1, #1
@@ -64,15 +64,14 @@ LCD_Clear:
         MOV r0, r5               @ r0 = &array
         LDR r2, =CANVAS_HEIGHT   @ r2 = CANVAS_HEIGHT
         SDIV r1, r2, r3          @ r1 = CANVAS_HEIGHT/5
-        @LSL r1, r12, #1
         BL ST_RAMWR_CIRC
         BL ReleaseArray
-     POP {r0-r3,r5,LR}
+     POP {r0-r5,LR}
      BX LR
 
 @.DESC     name=LCD_MakeColor type=proc
 @ ***************************************************************************
-@ *                  Инициализация ЖК панели                                *
+@ *                  Make 16bit color from RGB                              *
 @ ***************************************************************************
 @ * Вход: R0 - R (0..31), R1 - G (0..63), R2 - B (0..31)                    *
 @ * Результат: R5 - 16bit color                                             *
@@ -85,8 +84,42 @@ LCD_MakeColor:
           BFI r5, r0, #11, #5
           BFI r5, r1, #5, #6
           BFI r5, r2, #0, #5
-          @REV16 r0, r5
-          MOV r5, r0
+     POP {r0-r2,LR}
+     BX LR
+
+@.DESC     name=LCD_Convert24bitColor type=proc
+@ ***************************************************************************
+@ *                  Make 16bit color from 24bit                            *
+@ ***************************************************************************
+@ * Вход: R0 - 24bit color (RGB)                                            *
+@ * Результат: R5 - 16bit color                                             *
+@ ***************************************************************************
+@.ENDDESC
+.global LCD_Convert24bitColor
+LCD_MakeColor:
+     PUSH {r0-r2,LR}
+          EOR r5,r5
+          @ convert R: R16 = R24 * 31/255
+          MOV r1, #31
+          MOV r2, #0xFF
+          UBFX r3, r0, #16, #8
+          MUL r1, r3
+          UDIV r1, r2
+          BFI r5, r1, #11, #5
+          @ convert R: G16 = G24 * 63/255
+          MOV r1, #63
+          MOV r2, #0xFF
+          UBFX r3, r0, #8, #8
+          MUL r1, r3
+          UDIV r1, r2
+          BFI r5, r1, #5, #6
+          @ convert R: B16 = B24 * 31/255
+          MOV r1, #31
+          MOV r2, #0xFF
+          UBFX r3, r0, #0, #8
+          MUL r1, r3
+          UDIV r1, r2
+          BFI r5, r1, #0, #5
      POP {r0-r2,LR}
      BX LR
 
@@ -102,9 +135,8 @@ LCD_Init:
           BL ST_SWRESET
           MOV r0, #130
           BL SYSTICK_DELAY
-
           MOV r0, #5
-          LDR r1, =#0
+          MOV r1, #0
           BL GetArray
           LDR r0, =0xc0
           LDR r1, =0x33
@@ -120,80 +152,25 @@ LCD_Init:
           BL ST_IDMOFF
           MOV r0, RGB_65K_16BIT
           BL ST_COLMOD
-          LDR r0, =#100
+          MOV r0, #100
           BL SYSTICK_DELAY
-LCD_init_orient:
           MOV r0, DISP_ORIENTATION
           BL ST_MADCTL
-          LDR r0, =#10
+          MOV r0, #10
           BL SYSTICK_DELAY
-
-           MOV r0, 0x35 @ +13.26V, -10.43V
-          BL ST_GCTRL
-          MOV r0, 0x19  @0.725V
-          BL ST_VCOMS
-
-          MOV r0, 0x2C
-          BL ST_LCMCTRL
-
-          LDR r0, =#1
-          BL ST_VDVVRHEN
-
-          MOV r0, #0x12 @  -4.45V
-          BL ST_VRHS
-
-          MOV r0, #20 @def 0V
-          BL ST_VDVS
-
-          MOV r0, #0x0F   @60Hz  dot inversion
-          BL ST_FRCTRL2
-
-          MOV r0, #0xA1
-          BL ST_PWCTRL1
-
-          LDR r2, =DATA_FOR_PVGAMCTRL
-          MOV r0, #14
-          LDR r1, =#0
-          BL GetArray
-          EOR r3, r3
-data_copy_0:
-          LDRB r4, [r2,r3]
-          STRB r4, [r5,r3]
-          ADD r3, #1
-          CMP r3, r0
-          BNE data_copy_0
-          MOV r0, r5
-          BL ST_PVGAMCTRL   @gamma control magic
-          BL ReleaseArray
-
-          LDR r2, =DATA_FOR_NVGAMCTRL
-          MOV r0, #14
-          LDR r1, =#0
-          BL GetArray
-          EOR r3, r3
-data_copy_1:
-          LDRB r4, [r2,r3]
-          STRB r4, [r5,r3]
-          ADD r3, #1
-          CMP r3, r0
-          BNE data_copy_1
-          MOV r0, r5
-          BL ST_NVGAMCTRL   @gamma control magic 2
-          BL ReleaseArray
-
           BL ST_INVON
-          LDR r0, = #10
+          MOV r0, #10
           BL SYSTICK_DELAY
           BL ST_NORON
           BL SYSTICK_DELAY
           BL ST_SLPOUT
-          LDR r0, =#100
+          MOV r0, #100
           BL SYSTICK_DELAY
           BL ST_DISPON
           BL SYSTICK_DELAY
-          MOV r0, #31
-          MOV r1, #63
-          MOV r2, #0
+          MOV r0, #0
+          MOV r1, #5
+          MOV r2, #20
           BL LCD_MakeColor
           MOV r0,r5
           BL LCD_Clear

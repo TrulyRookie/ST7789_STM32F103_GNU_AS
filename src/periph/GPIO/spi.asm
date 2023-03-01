@@ -179,8 +179,6 @@ push {r0-r4,lr}
 Send_Param:
      BL DataIsParameter
 SendData0:
-     BL WAIT_TXE                                @ Wait until TXE not setup to 1
-     BL SelectSlave                             @ Select LCD to receive data
      CMP r0, 0xFF                               @ if (data is Pointer) SendData_Bulk();
      BHI SendData_Bulk
      BBP r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
@@ -191,6 +189,8 @@ SendData0:
      STR r11, [r3]                              @ clear DFF
      STR r12, [r2]                              @ SPI on}
 SendData_IsByte:
+     BL WAIT_TXE                                @ Wait until TXE not setup to 1
+     BL SelectSlave                             @ Select LCD to receive data
      LDR r1, =(SPI1 + SPI_DR)                   @ Take TX buffer address
      STRB r0, [r1]                              @ Send data
      BL SendData_Return                         @ Return
@@ -225,6 +225,7 @@ push {r0-r5, lr}
      STR r11, [r3]                               @ DFF clear
      STR r12, [r2]                               @ SPI ON
 SendArray_IsByte:
+     BL SelectSlave
      MOV r2, #0                                  @ CYCLE_COUNTER = 0
      LDR r5, =(SPI1+SPI_DR)                      @ Take TX buffer address
 SendArray_SendLoopByte:                          @ do{
@@ -244,11 +245,12 @@ HWORD_send:
      STR r12, [r3]                               @ DFF set
      STR r12, [r2]                               @ SPI ON
 SendArray_IsHword:
+     BL SelectSlave
      MOV r2, #0
      LDR r5, =(SPI1+SPI_DR)
 SendArray_SendLoopHWORD:
      BL WAIT_TXE
-     LDRH r3, [r0,r2]
+     LDRH r3, [r0,r2,lsl #1]
      STRH r3, [r5]
      ADD r2, #1
      CMP r2, r1

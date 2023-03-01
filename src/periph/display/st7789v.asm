@@ -5,7 +5,7 @@
 .thumb              @ тип используемых инструкций Thumb
 .cpu cortex-m3      @ процессор
 
-.include "/src/periph/display/st7789v.inc"
+.include "/src/inc/st7789v.inc"
 
 .section .asmcode
 
