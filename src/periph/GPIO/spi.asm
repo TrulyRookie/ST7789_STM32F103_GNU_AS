@@ -162,39 +162,45 @@ push {r0,r1,lr}
      BL SYSTICK_DELAY
 pop {r0,r1,lr}
 bx LR
-
+@.DESC    name=SendData type=proc
+@ Subroutine for sending data to the LCD
+@****************************************
+@ IN:
+@    R0 - data
+@    R1 - type of data (0 - command, 1 - parameters)
+@ OUT: NONE
+@.ENDDESC
 .global SendData
 SendData:
 push {r0-r4,lr}
-     CBNZ r1, Send_Param
-     BL DataIsCommand
+     CBNZ r1, Send_Param                        @ if  (dataType is Parameter) DataIsParameter();
+     BL DataIsCommand                           @ else DataIsCommand();
      B SendData0
 Send_Param:
      BL DataIsParameter
 SendData0:
-     BL WAIT_TXE
-     @BL WAIT_BSY
-     BL SelectSlave
-     CMP r0, 0xFF
+     CMP r0, 0xFF                               @ if (data is Pointer) SendData_Bulk();
      BHI SendData_Bulk
      BBP r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
-     LDR r2, [r3]
-     CBZ r2, SendData_IsByte
-     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N
-     STR r11, [r2]
-     STR r11, [r3]
-     STR r12, [r2]
+     LDR r2, [r3]                               @ Take DFF flag state
+     CBZ r2, SendData_IsByte                    @ if (DFF == 0) goto data_is_byte
+     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N  @ else{
+     STR r11, [r2]                              @ SPI off
+     STR r11, [r3]                              @ clear DFF
+     STR r12, [r2]                              @ SPI on}
 SendData_IsByte:
-     LDR r1, =(SPI1 + SPI_DR)
-     @BL WAIT_TXE
-     STRB r0, [r1]
-     BL SendData_Return
+     BL WAIT_TXE                                @ Wait until TXE not setup to 1
+     BL SelectSlave                             @ Select LCD to receive data
+     LDR r1, =(SPI1 + SPI_DR)                   @ Take TX buffer address
+     STRB r0, [r1]                              @ Send data
+     BL SendData_Return                         @ Return
 SendData_Bulk:
      .if SPI_DMA_USE==1
           BL SendByDMA
      .else
-          BL SendByCycle
+          BL SendArray
      .endif
+     BL WAIT_TXE
      BL WAIT_BSY
 SendData_Return:
      BL ReleaseSlave
@@ -204,53 +210,52 @@ bx lr
 SendByDMA:
 bx lr
 
-SendByCycle:
+SendArray:                                       @ SendArray(&array)
 push {r0-r5, lr}
-     LDR r1, [r0,-4]
-     UBFX r2, r1, #16, #2
-     CBNZ r2, HWORD_send
-     UBFX r1, r1, #0, #16
-     LSL r1, r1, r2       @size in bytes
+     LDR r1, [r0,-4]                             @ Get size word of array
+     UBFX r2, r1, #16, #2                        @ Get data size in power of 2
+     UBFX r1, r1, #0, #16                        @ Get data count
+     CBNZ r2, HWORD_send                         @ if (dataSize > 0) goto  IsHWORD
+     LSL r1, r1, r2                              @ size in bytes dataCount<<dataSize
      BBP r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
-     LDR r2, [r3]
-     CBZ r2, SendByCycle_IsByte
-     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N
-     STR r11, [r2]
-     STR r11, [r3]
-     STR r12, [r2]
-SendByCycle_IsByte:
-     SUB r1, #1
-     MOV r2, #0
-     LDR r5, =(SPI1+SPI_DR)
-SendByCycle_SendLoopByte:
-     BL WAIT_TXE
-     LDRB r3, [r0,r2]
-     STRB r3, [r5]
-     ADD r2, #1
-     CMP r2, r1
-     BNE SendByCycle_SendLoopByte
-     B SendByCycle_Return
+     LDR r2, [r3]                                @ take DFF flag state
+     CBZ r2, SendArray_IsByte                    @ if (DFF==0) goto isByte
+     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N   @ else configure DFF to byte sending
+     STR r11, [r2]                               @ SPI OFF
+     STR r11, [r3]                               @ DFF clear
+     STR r12, [r2]                               @ SPI ON
+SendArray_IsByte:
+     BL SelectSlave
+     MOV r2, #0                                  @ CYCLE_COUNTER = 0
+     LDR r5, =(SPI1+SPI_DR)                      @ Take TX buffer address
+SendArray_SendLoopByte:                          @ do{
+     BL WAIT_TXE                                 @ wait until TXE != 1
+     LDRB r3, [r0,r2]                            @ read data byte from memory buffer
+     STRB r3, [r5]                               @ write data byte to TX buffer
+     ADD r2, #1                                  @ CYCLE_COUNTER++
+     CMP r2, r1                                  @ }while(CYCLE_COUNTER!=dataCount)
+     BNE SendArray_SendLoopByte
+     B SendArray_Return                          @return;
 HWORD_send:
-     UBFX r1, r1, #0, #16
      BBP r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
      LDR r2, [r3]
-     CBNZ r3, SendByCycle_IsHword
-     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N
-     STR r11, [r2]
-     STR r12, [r3]
-     STR r12, [r2]
-SendByCycle_IsHword:
-     SUB r1, #1
+     CBNZ r2, SendArray_IsHword                  @ if (DFF == 1) goto isHWORD
+     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N   @ else configure DFF to HWORD sending
+     STR r11, [r2]                               @ SPI OFF
+     STR r12, [r3]                               @ DFF set
+     STR r12, [r2]                               @ SPI ON
+SendArray_IsHword:
+     BL SelectSlave
      MOV r2, #0
      LDR r5, =(SPI1+SPI_DR)
-SendByCycle_SendLoopHWORD:
+SendArray_SendLoopHWORD:
      BL WAIT_TXE
-     LDRH r3, [r0,r2]
+     LDRH r3, [r0,r2,lsl #1]
      STRH r3, [r5]
      ADD r2, #1
      CMP r2, r1
-     BNE SendByCycle_SendLoopHWORD
-SendByCycle_Return:
+     BNE SendArray_SendLoopHWORD
+SendArray_Return:
 pop {r0-r5, lr}
 BX LR
 
