@@ -1,9 +1,9 @@
-@.CharSet=CP1251
+@.CHARSET =CP1251
 @GNU AS
 
-.syntax unified     @ синтаксис исходного кода
-.thumb              @ тип используемых инструкций Thumb
-.cpu cortex-m3      @ процессор
+.SYNTAX unified   @ синтаксис исходного кода
+.THUMB       @ тип используемых инструкций Thumb
+.CPU cortex-m3   @ процессор
 @=============================================================================
 @| 1) SPI_CR1->BRP[2..0]  - init baud rate
 @|                  000: fPCLK/2
@@ -26,143 +26,151 @@
 @| GPIOA: PIN5 - SCLK, PIN7 - MOSI, PIN4 - CS, PIN6 - RESET (push-pull, output)
 @| GPIOB: PIN0 - DC (0 - data is command, 1 - data is parameter)
 @=============================================================================
-.include "/src/inc/spi.inc"
-.include "/src/inc/dma.inc"
-.include "/src/inc/gpio.inc"
-.include "/src/inc/rcc.inc"
-.include "/src/inc/utils.inc"
-.include "/src/inc/dma.inc"
+.INCLUDE   "/src/inc/spi.inc"
+.INCLUDE   "/src/inc/dma.inc"
+.INCLUDE   "/src/inc/gpio.inc"
+.INCLUDE   "/src/inc/rcc.inc"
+.INCLUDE   "/src/inc/utils.inc"
+.INCLUDE   "/src/inc/dma.inc"
 
-.section .bss
-     .align(2)
+.SECTION .bss
+.ALIGN ( 2 )
 @**************SPI VARIABLES*************************
-CS_BB_SET:  .word 0
-CS_BB_RESET:.word 0
-DC_BB_SET:  .word 0
-DC_BB_RESET:.word 0
-RST_BB_SET:  .word 0
-RST_BB_RESET:.word 0
-.section .asmcode
+CS_BB_SET: .WORD  0
+CS_BB_RESET: .WORD  0
+DC_BB_SET: .WORD  0
+DC_BB_RESET: .WORD  0
+RST_BB_SET: .WORD  0
+RST_BB_RESET: .WORD  0
+.SECTION .asmcode
 
-.global WAIT_TXE
+.GLOBAL WAIT_TXE
 WAIT_TXE:
-push {r0,r1,lr}
-     BBP R0, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+          PUSH  { R0, R1, LR }
+          BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
 WAIT_TXE_1:
-     LDR r1, [r0]
-     TST r1, #1
-     BEQ WAIT_TXE_1
-pop {r0,r1,lr}
-bx lr
+          LDR  R1, [ R0 ]
+          TST  R1, #1
+          BEQ  WAIT_TXE_1
+          POP  { R0, R1, LR }
+          BX  LR
 
 
-.global WAIT_BSY
+.GLOBAL WAIT_BSY
 WAIT_BSY:
-push {r0,r1,lr}
-     BBP R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+          PUSH  { R0, R1, LR }
+          BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
 WAIT_BSY_0:
-     LDR r1, [r0]
-     TST r1, #1
-     BNE WAIT_BSY_0
-pop {r0,r1,lr}
-bx lr
+          LDR  R1, [ R0 ]
+          TST  R1, #1
+          BNE  WAIT_BSY_0
+          POP  { R0, R1, LR }
+          BX  LR
 
-.global SPI1_Init
+.GLOBAL SPI1_Init
 SPI1_Init:
-     PUSH {r0-r3,lr}
+          PUSH  { R0 - R3, LR }
      @**** CS ****
-     LDR r0, =SPI_CS_GPIO
-     MOV r1, SPI_CS_NUM
-     LDR r2, =OUTPUT_50_PP|PIN_SET_PULLUP
-     BL GPIO_PinTuning
-     LDR r0, =CS_BB_SET
-     LDR r1, =CS_BB_RESET
-     STR r5, [r0]
-     STR r6, [r1]
+          LDR  R0, = SPI_CS_GPIO
+          MOV  R1, SPI_CS_NUM
+          LDR  R2, = OUTPUT_50_PP | PIN_SET_PULLUP
+          BL  GPIO_PinTuning
+          LDR  R0, = CS_BB_SET
+          LDR  R1, = CS_BB_RESET
+          STR  R5, [ R0 ]
+          STR  R6, [ R1 ]
      @**** DC ****
-     LDR r0, =SPI_DC_GPIO
-     MOV r1, SPI_DC_NUM
-     MOV r2, OUTPUT_50_PP
-     BL GPIO_PinTuning
-     LDR r0, =DC_BB_SET
-     LDR r1, =DC_BB_RESET
-     STR r5, [r0]
-     STR r6, [r1]
+          LDR  R0, = SPI_DC_GPIO
+          MOV  R1, SPI_DC_NUM
+          MOV  R2, OUTPUT_50_PP
+          BL  GPIO_PinTuning
+          LDR  R0, = DC_BB_SET
+          LDR  R1, = DC_BB_RESET
+          STR  R5, [ R0 ]
+          STR  R6, [ R1 ]
      @**** RST ****
-     LDR r0, =SPI_RST_GPIO
-     MOV r1, SPI_RST_NUM
-     LDR r2, =OUTPUT_50_PP|PIN_SET_PULLUP
-     BL GPIO_PinTuning
-     LDR r0, =RST_BB_SET
-     LDR r1, =RST_BB_RESET
-     STR r5, [r0]
-     STR r6, [r1]
+          LDR  R0, = SPI_RST_GPIO
+          MOV  R1, SPI_RST_NUM
+          LDR  R2, = OUTPUT_50_PP | PIN_SET_PULLUP
+          BL  GPIO_PinTuning
+          LDR  R0, = RST_BB_SET
+          LDR  R1, = RST_BB_RESET
+          STR  R5, [ R0 ]
+          STR  R6, [ R1 ]
      @**** MOSI ****
-     LDR r0, =GPIOA
-     MOV r1, 7
-     MOV r2, OUTPUT_50_AFPP
-     BL GPIO_PinTuning
+          LDR  R0, = GPIOA
+          MOV  R1, 7
+          MOV  R2, OUTPUT_50_AFPP
+          BL  GPIO_PinTuning
      @**** SCLK ****
-     LDR r0, =GPIOA
-     MOV r1, 5
-     MOV r2, OUTPUT_50_AFPP
-     BL GPIO_PinTuning
+          LDR  R0, = GPIOA
+          MOV  R1, 5
+          MOV  R2, OUTPUT_50_AFPP
+          BL  GPIO_PinTuning
 
-     BBP r0, RCC_BASE, RCC_APB2ENR, RCC_APB2ENR_SPI1EN_N
-     STR r12, [r0]
+          BBP  r0, RCC_BASE, RCC_APB2ENR, RCC_APB2ENR_SPI1EN_N
+          STR  R12, [ R0 ]
 
-     LDR R0, =SPI_SETTINGS_MHBTRSO_8_36_SCKHI_FRONT
-     LDR R1, =(SPI1+SPI_CR1)
-     STR r0, [r1]
+          LDR  R0, = SPI_SETTINGS_MHBTRSO_8_36_SCKHI_FRONT
+          LDR  R1, = ( SPI1 + SPI_CR1 )
+          STR  R0, [ R1 ]
 
-     BBP R0, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N
-     STR R12, [R0]                                     @SPI ON
+          BBP  R0, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N
+          STR  R12, [ R0 ]    @SPI ON
 
-     POP {r0-r3, lr}
-     BX LR
+.IF ( SPI_DMA_USE == 1 )
+          BL  DMA1_Init
+          BBP R0, SPI1_BASE, SPI_CR2, SPI_CR2_TXDMAEN_N
+          STR R12, [r0]
+          BBP R0, SPI1_BASE, SPI_CR2, SPI_CR2_RXDMAEN_N
+          STR R12, [r0]
+.ENDIF
+
+          POP  { R0 - R3, LR }
+          BX  LR
 
 SelectSlave:
-push {r0,lr}
-     LVR r0, CS_BB_RESET
-     STR r12, [r0]
-pop {r0, lr}
-bx LR
+          PUSH  { R0, LR }
+          LVR  r0, CS_BB_RESET
+          STR  R12, [ R0 ]
+          POP  { R0, LR }
+          BX  LR
 
 ReleaseSlave:
-push {r0,lr}
-     LVR r0, CS_BB_SET
-     STR r12, [r0]
-pop {r0, lr}
-bx LR
+          PUSH  { R0, LR }
+          LVR  r0, CS_BB_SET
+          STR  R12, [ R0 ]
+          POP  { R0, LR }
+          BX  LR
 
 DataIsCommand:
-push {r0,lr}
-     LVR r0, DC_BB_RESET
-     STR r12, [r0]
-pop {r0, lr}
-bx LR
+          PUSH  { R0, LR }
+          LVR  r0, DC_BB_RESET
+          STR  R12, [ R0 ]
+          POP  { R0, LR }
+          BX  LR
 
 DataIsParameter:
-push {r0,lr}
-     LVR r0, DC_BB_SET
-     STR r12, [r0]
-pop {r0, lr}
-bx LR
+          PUSH  { R0, LR }
+          LVR  r0, DC_BB_SET
+          STR  R12, [ R0 ]
+          POP  { R0, LR }
+          BX  LR
 
-.global HardResetDisplay
+.GLOBAL HardResetDisplay
 HardResetDisplay:
-push {r0,r1,lr}
-     LVR r2, RST_BB_RESET
-     LVR r1, RST_BB_SET
-     STR r12, [r2]
-     MOV r0, #10
-     BL SYSTICK_DELAY
-     STR r12, [r1]
-     MOV r0, #100
-     BL SYSTICK_DELAY
-pop {r0,r1,lr}
-bx LR
-@.DESC    name=SendData type=proc
+          PUSH  { R0, R1, LR }
+          LVR  r2, RST_BB_RESET
+          LVR  r1, RST_BB_SET
+          STR  R12, [ R2 ]
+          MOV  R0, #10
+          BL  SYSTICK_DELAY
+          STR  R12, [ R1 ]
+          MOV  R0, #100
+          BL  SYSTICK_DELAY
+          POP  { R0, R1, LR }
+          BX  LR
+@.DESC     name=SendData type=proc
 @ Subroutine for sending data to the LCD
 @****************************************
 @ IN:
@@ -170,93 +178,146 @@ bx LR
 @    R1 - type of data (0 - command, 1 - parameters)
 @ OUT: NONE
 @.ENDDESC
-.global SendData
+.GLOBAL SendData
 SendData:
-push {r0-r4,lr}
-     CBNZ r1, Send_Param                        @ if  (dataType is Parameter) DataIsParameter();
-     BL DataIsCommand                           @ else DataIsCommand();
-     B SendData0
+          PUSH  { R0 - R4, LR }
+          CBNZ  R1, Send_Param    @ if  (dataType is Parameter) DataIsParameter();
+          BL  DataIsCommand    @ else DataIsCommand();
+          B   SendData0
 Send_Param:
-     BL DataIsParameter
+          BL  DataIsParameter
 SendData0:
-     CMP r0, 0xFF                               @ if (data is Pointer) SendData_Bulk();
-     BHI SendData_Bulk
-     BBP r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
-     LDR r2, [r3]                               @ Take DFF flag state
-     CBZ r2, SendData_IsByte                    @ if (DFF == 0) goto data_is_byte
-     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N  @ else{
-     STR r11, [r2]                              @ SPI off
-     STR r11, [r3]                              @ clear DFF
-     STR r12, [r2]                              @ SPI on}
+          CMP  R0, 0xFF       @ if (data is Pointer) SendData_Bulk();
+          BHI  SendData_Bulk
+          BBP  r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
+          LDR  R2, [ R3 ]     @ Take DFF flag state
+          CBZ  R2, SendData_IsByte    @ if (DFF == 0) goto data_is_byte
+          BBP  R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N @ else{
+          STR  R11, [ R2 ]    @ SPI off
+          STR  R11, [ R3 ]    @ clear DFF
+          STR  R12, [ R2 ]    @ SPI on}
 SendData_IsByte:
-     BL WAIT_TXE                                @ Wait until TXE not setup to 1
-     BL SelectSlave                             @ Select LCD to receive data
-     LDR r1, =(SPI1 + SPI_DR)                   @ Take TX buffer address
-     STRB r0, [r1]                              @ Send data
-     BL SendData_Return                         @ Return
+          BL  WAIT_TXE        @ Wait until TXE not setup to 1
+          BL  SelectSlave     @ Select LCD to receive data
+          LDR  R1, = ( SPI1 + SPI_DR )    @ Take TX buffer address
+          STRB  R0, [ R1 ]    @ Send data
+          BL  SendData_Return    @ Return
 SendData_Bulk:
-     .if SPI_DMA_USE==1
-          BL SendByDMA
-     .else
-          BL SendArray
-     .endif
-     BL WAIT_TXE
-     BL WAIT_BSY
+.IF SPI_DMA_USE == 1
+          BL  SendByDMA
+.ELSE
+          BL  SendArray
+.ENDIF
+          BL  WAIT_TXE
+          BL  WAIT_BSY
 SendData_Return:
-     BL ReleaseSlave
-pop {r0-r4,lr}
-bx lr
+          BL  ReleaseSlave
+          POP  { R0 - R4, LR }
+          BX  LR
 
 SendByDMA:
-bx lr
+          PUSH  { R0 - R5, LR }
+          LDR  R1, [ R0, - 4 ]    @ Get size word of array
+          UBFX  R2, R1, #16, #2    @ Get data size in power of 2
+          UBFX  R1, R1, #0, #16    @ Get data count
+          LDR R3, =(DMA1+DMA_CMAR3)
+          STR R0, [R3]
+          CBNZ  R2, DMA_HWORD_SEND    @ if (dataSize > 0) goto  IsHWORD
+          LSL  R1, R1, R2     @ size in bytes dataCount<<dataSize
+          BBP  r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
+          LDR  R2, [ R3 ]     @ take DFF flag state
+          CBZ  R2, DMAArray_IsByte    @ if (DFF==0) goto isByte
+          BBP  R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N @ else configure DFF to byte sending
+          STR  R11, [ R2 ]    @ SPI OFF
+          STR  R11, [ R3 ]    @ DFF clear
+          STR  R12, [ R2 ]    @ SPI ON
+          BBP R4, DMA1_BASE, DMA_CCR3, #10      @MSize low bit
+          STR R11, [R4] @8bit memory
+          BBP R4, DMA1_BASE, DMA_CCR3, #8      @PSize low bit
+          STR R11, [R4] @8bit peripheria
+DMAArray_IsByte:
+          LDR R2, =(DMA1+DMA_CNDTR3)
+          STR R1, [R2]
+          BL WAIT_TXE
+          BL SelectSlave
+          BBP R3, DMA1_BASE, DMA_CCR3, #0
+          STR R12, [R3] @DMA channel 3 ON
+          B   DMAArray_Return    @return;
+DMA_HWORD_SEND:
+          BBP  r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
+          LDR  R2, [ R3 ]
+          CBNZ  R2, DMAArray_IsHword    @ if (DFF == 1) goto isHWORD
+          BBP  R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N @ else configure DFF to HWORD sending
+          STR  R11, [ R2 ]    @ SPI OFF
+          STR  R12, [ R3 ]    @ DFF set
+          STR  R12, [ R2 ]    @ SPI ON
+          BBP R4, DMA1_BASE, DMA_CCR3, #10      @MSize low bit
+          STR R12, [R4] @16bit memory
+          BBP R4, DMA1_BASE, DMA_CCR3, #8      @PSize low bit
+          STR R12, [R4] @16bit peripheria
+DMAArray_IsHword:
+          LDR R2, =(DMA1+DMA_CNDTR3)
+          STR R1, [R2]
+          BL WAIT_TXE
+          BL  SelectSlave
+          BBP R3, DMA1_BASE, DMA_CCR3, #0
+          STR R12, [R3] @DMA channel 3 ON
+          BBP R3, DMA_BASE, DMA_ISR, DMA_ISR_TCIF3_N
+DMAArray_Return:
+          LDR R2, [R3]
+          CMP R2, #1
+          BNE DMAArray_Return
 
-SendArray:                                       @ SendArray(&array)
-push {r0-r5, lr}
-     LDR r1, [r0,-4]                             @ Get size word of array
-     UBFX r2, r1, #16, #2                        @ Get data size in power of 2
-     UBFX r1, r1, #0, #16                        @ Get data count
-     CBNZ r2, HWORD_send                         @ if (dataSize > 0) goto  IsHWORD
-     LSL r1, r1, r2                              @ size in bytes dataCount<<dataSize
-     BBP r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
-     LDR r2, [r3]                                @ take DFF flag state
-     CBZ r2, SendArray_IsByte                    @ if (DFF==0) goto isByte
-     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N   @ else configure DFF to byte sending
-     STR r11, [r2]                               @ SPI OFF
-     STR r11, [r3]                               @ DFF clear
-     STR r12, [r2]                               @ SPI ON
+          POP  { R0 - R5, LR }
+          BX  LR
+
+SendArray: @ SendArray(&array)
+          PUSH  { R0 - R5, LR }
+          LDR  R1, [ R0, - 4 ]    @ Get size word of array
+          UBFX  R2, R1, #16, #2    @ Get data size in power of 2
+          UBFX  R1, R1, #0, #16    @ Get data count
+          CBNZ  R2, HWORD_send    @ if (dataSize > 0) goto  IsHWORD
+          LSL  R1, R1, R2     @ size in bytes dataCount<<dataSize
+          BBP  r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
+          LDR  R2, [ R3 ]     @ take DFF flag state
+          CBZ  R2, SendArray_IsByte    @ if (DFF==0) goto isByte
+          BBP  R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N @ else configure DFF to byte sending
+          STR  R11, [ R2 ]    @ SPI OFF
+          STR  R11, [ R3 ]    @ DFF clear
+          STR  R12, [ R2 ]    @ SPI ON
 SendArray_IsByte:
-     BL SelectSlave
-     MOV r2, #0                                  @ CYCLE_COUNTER = 0
-     LDR r5, =(SPI1+SPI_DR)                      @ Take TX buffer address
-SendArray_SendLoopByte:                          @ do{
-     BL WAIT_TXE                                 @ wait until TXE != 1
-     LDRB r3, [r0,r2]                            @ read data byte from memory buffer
-     STRB r3, [r5]                               @ write data byte to TX buffer
-     ADD r2, #1                                  @ CYCLE_COUNTER++
-     CMP r2, r1                                  @ }while(CYCLE_COUNTER!=dataCount)
-     BNE SendArray_SendLoopByte
-     B SendArray_Return                          @return;
+          BL  SelectSlave
+          MOV  R2, #0         @ CYCLE_COUNTER = 0
+          LDR  R5, = ( SPI1 + SPI_DR )    @ Take TX buffer address
+SendArray_SendLoopByte: @ do{
+          BL  WAIT_TXE        @ wait until TXE != 1
+          LDRB  R3, [ R0, R2 ]    @ read data byte from memory buffer
+          STRB  R3, [ R5 ]    @ write data byte to TX buffer
+          ADD  R2, #1         @ CYCLE_COUNTER++
+          CMP  R2, R1         @ }while(CYCLE_COUNTER!=dataCount)
+          BNE  SendArray_SendLoopByte
+          B   SendArray_Return    @return;
 HWORD_send:
-     BBP r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
-     LDR r2, [r3]
-     CBNZ r2, SendArray_IsHword                  @ if (DFF == 1) goto isHWORD
-     BBP R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N   @ else configure DFF to HWORD sending
-     STR r11, [r2]                               @ SPI OFF
-     STR r12, [r3]                               @ DFF set
-     STR r12, [r2]                               @ SPI ON
+          BBP  r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
+          LDR  R2, [ R3 ]
+          CBNZ  R2, SendArray_IsHword    @ if (DFF == 1) goto isHWORD
+          BBP  R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N @ else configure DFF to HWORD sending
+          STR  R11, [ R2 ]    @ SPI OFF
+          STR  R12, [ R3 ]    @ DFF set
+          STR  R12, [ R2 ]    @ SPI ON
 SendArray_IsHword:
-     BL SelectSlave
-     MOV r2, #0
-     LDR r5, =(SPI1+SPI_DR)
+          BL  SelectSlave
+          MOV  R2, #0
+          LDR  R5, = ( SPI1 + SPI_DR )
 SendArray_SendLoopHWORD:
-     BL WAIT_TXE
-     LDRH r3, [r0,r2,lsl #1]
-     STRH r3, [r5]
-     ADD r2, #1
-     CMP r2, r1
-     BNE SendArray_SendLoopHWORD
+          BL  WAIT_TXE
+          LDRH  R3, [ R0, R2, LSL #1 ]
+          STRH  R3, [ R5 ]
+          ADD  R2, #1
+          CMP  R2, R1
+          BNE  SendArray_SendLoopHWORD
 SendArray_Return:
-pop {r0-r5, lr}
-BX LR
+          POP  { R0 - R5, LR }
+          BX  LR
 
 

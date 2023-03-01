@@ -96,7 +96,7 @@ LCD_MakeColor:
 @ ***************************************************************************
 @.ENDDESC
 .global LCD_Convert24bitColor
-LCD_MakeColor:
+LCD_Convert24bitColor:
      PUSH {r0-r2,LR}
           EOR r5,r5
           @ convert R: R16 = R24 * 31/255
@@ -168,10 +168,8 @@ LCD_Init:
           BL SYSTICK_DELAY
           BL ST_DISPON
           BL SYSTICK_DELAY
-          MOV r0, #0
-          MOV r1, #5
-          MOV r2, #20
-          BL LCD_MakeColor
+          LDR r0, =#0xFFF3BC
+          BL LCD_Convert24bitColor
           MOV r0,r5
           BL LCD_Clear
      POP {r0-r5,LR}
