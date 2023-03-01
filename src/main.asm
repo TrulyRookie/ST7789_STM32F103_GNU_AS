@@ -4,7 +4,7 @@
 .syntax unified     @ синтаксис исходного кода
 .thumb              @ тип используемых инструкций Thumb
 .cpu cortex-m3      @ процессор
-.include "/src/periph/display/st7789v.inc"
+.include "/src/inc/st7789v.inc"
 .include "/src/inc/gpio.inc"
 .section .asmcode
 @ основная программа
@@ -13,7 +13,7 @@ Start:
      @MOVW r0, #:lower16:BSS_END_ADDRESS
      @MOVT r0, #:upper16:BSS_END_ADDRESS
      EOR r11,r11
-     ADD r12, r11, #1
+     MOV r12, #1
      LDR r0, =_BSS_START
      LDR r1, =_BSS_END
      EOR r2,r2
@@ -29,7 +29,6 @@ BSS_REGION_END:
      LDR r0, =(CLOCK_AFIO|CLOCK_GPIOA|CLOCK_GPIOB)
      BL GPIO_ClockON
      BL SPI1_Init        @ включить SPI1
-     @BL DMA_Init         @ включить DMA1
      BL LCD_Init         @ настроить дисплей
 
 MAIN_LOOP:
