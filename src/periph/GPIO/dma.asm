@@ -23,10 +23,10 @@
 .INCLUDE   "/src/inc/gpio.inc"
 .INCLUDE   "/src/inc/rcc.inc"
 .INCLUDE   "/src/inc/utils.inc"
-
+.GLOBAL DMA_CIRCULAR_COUNTER
 .SECTION .bss
 .ALIGN ( 2 )
-MEM_BUFF_ADDR: .WORD  0
+DMA_CIRCULAR_COUNTER: .WORD  0
 .SECTION .asmcode
 
 .GLOBAL DMA1_Init
@@ -57,5 +57,28 @@ DMA1_Init:
 
           POP  { R0 - R4, LR }
           BX  LR
+
+
+.GLOBAL   IRQ_DMA1_Channel3
+IRQ_DMA1_Channel3:
+                    PUSH {r0,r1,lr}
+                    BBP R0, DMA1_BASE, DMA_IFCR, 8
+                    STR R12, [r0]
+                    STR R12, [r0,4]
+                    STR R12, [r0,8]
+                    LDR R0, =DMA_CIRCULAR_COUNTER
+                    LDR R1, [R0]
+                    SUBS R1, #1
+                    STR R1, [r0]
+                    BNE IRQ_DMA_CH3_exit
+                         BBP R3, DMA1_BASE, DMA_CCR3, 1
+                         STR R11, [R3] @DMA IRQ CH 3 OFF
+                         BBP R1, DMA1_BASE, DMA_CCR3, 0
+                         STR R11, [R1] @DMA channel 3 OFF
+                         BBP R1, DMA1_BASE, DMA_CCR3, 5      @Circular bit
+                         STR R11, [R1] @circular off
+                    IRQ_DMA_CH3_exit:
+                    POP {r0,r1,lr}
+                    BX         LR
 
 

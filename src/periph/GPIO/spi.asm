@@ -318,4 +318,52 @@ SendArray_Return:
           POP  { R0 - R5, LR }
           BX  LR
 
+.if (SPI_DMA_USE==1)
+@IN r0 - &array, r1 - count
+.GLOBAL DMA_hSendCircular
+DMA_hSendCircular:
+     push {r0-r4,lr}
+          BL DataIsParameter
+          LDR R2, =DMA_CIRCULAR_COUNTER
+          STR R1, [R2]
+          BBP R3, DMA1_BASE, DMA_CCR3, 0
+          STR R11, [R3] @DMA channel 3 OFF
+          BBP  r3, SPI1_BASE, SPI_CR1, SPI_CR1_DFF_N
+          LDR  R2, [ R3 ]
+          CBNZ  R2, DMA_Circ_label0    @ if (DFF == 1) goto label0
+          BBP  R2, SPI1_BASE, SPI_CR1, SPI_CR1_SPE_N @ else configure DFF to HWORD sending
+          STR  R11, [ R2 ]    @ SPI OFF
+          STR  R12, [ R3 ]    @ DFF set
+          STR  R12, [ R2 ]    @ SPI ON
+          BBP R4, DMA1_BASE, DMA_CCR3, 10      @MSize low bit
+          STR R12, [R4] @16bit memory
+          BBP R4, DMA1_BASE, DMA_CCR3, 8      @PSize low bit
+          STR R12, [R4] @16bit peripheria
+          BBP R4, DMA1_BASE, DMA_CCR3, 5      @Circular bit
+          STR R12, [R4]
+          LDR  R1, [ R0, - 4 ]    @ Get size word of array
+          UBFX  R2, R1, #16, #2    @ Get data size in power of 2
+          UBFX  R1, R1, #0, #16    @ Get data count
+          LDR R3, =(DMA1+DMA_CMAR3)
+          STR R0, [R3]
+          LDR R2, =(DMA1+DMA_CNDTR3)
+          STR R1, [R2]
+          BL WAIT_TXE
+          BL  SelectSlave
+          BBP R3, DMA1_BASE, DMA_CCR3, 1
+          STR R12, [R3] @DMA IRQ CH 3 ON
+          BBP R3, DMA1_BASE, DMA_CCR3, 0
+          STR R12, [R3] @DMA channel 3 ON
+          LDR R0, =DMA_CIRCULAR_COUNTER
+DMA_CIRC_COUNTER_NOT_NULL:
+          LDR R1, [R0]
+          CMP R1, #0
+          BNE DMA_CIRC_COUNTER_NOT_NULL
+          BL WAIT_TXE
+          BL WAIT_BSY
+          BL ReleaseSlave
+DMA_Circ_label0:
+     pop {r0-r4,lr}
+     BX LR
+.endif
 

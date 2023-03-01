@@ -6,6 +6,7 @@
 .CPU           cortex-m3           @ процессор
 
 .INCLUDE       "/src/inc/st7789v.inc"
+.INCLUDE       "/src/inc/spi.inc"
 
 .SECTION       .asmcode
 DATA_FOR_PVGAMCTRL: .BYTE           0xd0, 0x04, 0x0d, 0x11, 0x13, 0x2b, 0x3f, 0x54, 0x4c, 0x18, 0x0d, 0x0b, 0x1F, 0x23
@@ -168,7 +169,7 @@ LCD_Init:
                     BL              SYSTICK_DELAY
                     BL              ST_DISPON
                     BL              SYSTICK_DELAY
-                    LDR             R0, = #0xFFF3BC
+                    LDR             R0, =#0x00FF00 @#0xFFF3BC
                     BL              LCD_Convert24bitColor
                     MOV             R0, R5
                     BL              LCD_Clear

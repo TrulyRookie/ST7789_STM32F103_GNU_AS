@@ -6,6 +6,7 @@
 .cpu cortex-m3      @ процессор
 
 .include "/src/inc/st7789v.inc"
+.include "/src/inc/spi.inc"
 
 .section .asmcode
 
@@ -291,13 +292,16 @@ ST_RAMWR_CIRC:
           @====PARAMETERS====
      pop {r0,r1,LR}
     PUSH {R0-r5,LR}
-          mov r2, r1
-          @sub r2, #1
-          mov r1, #1
+          .if (SPI_DMA_USE==1)
+               BL DMA_hSendCircular
+          .else
+               mov r2, r1
+               mov r1, #1
 RAMWR_Loop:
-          BL SendData
-          SUBS r2, #1
-          BNE RAMWR_Loop
+               BL SendData
+               SUBS r2, #1
+               BNE RAMWR_Loop
+          .endif
      POP {R0-r5,LR}
      BX LR
 
