@@ -62,10 +62,10 @@ DMA1_Init:
 .GLOBAL   IRQ_DMA1_Channel3
 IRQ_DMA1_Channel3:
                     PUSH {r0,r1,lr}
-                    BBP R0, DMA1_BASE, DMA_IFCR, 8
+                    BBP R0, DMA1_BASE, DMA_IFCR, DMA_IFCR_CGIF3_N
                     STR R12, [r0]
-                    STR R12, [r0,4]
-                    STR R12, [r0,8]
+                    @STR R12, [r0,4]
+                    @STR R12, [r0,8]
                     LDR R0, =DMA_CIRCULAR_COUNTER
                     LDR R1, [R0]
                     SUBS R1, #1

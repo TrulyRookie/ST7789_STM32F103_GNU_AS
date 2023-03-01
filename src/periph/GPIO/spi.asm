@@ -31,7 +31,7 @@
 .INCLUDE   "/src/inc/gpio.inc"
 .INCLUDE   "/src/inc/rcc.inc"
 .INCLUDE   "/src/inc/utils.inc"
-.INCLUDE   "/src/inc/dma.inc"
+.INCLUDE   "/src/inc/nvic.inc"
 
 .SECTION .bss
 .ALIGN ( 2 )
@@ -350,6 +350,12 @@ DMA_hSendCircular:
           STR R1, [R2]
           BL WAIT_TXE
           BL  SelectSlave
+          LDR R2, =NVIC_BASE+NVIC_ISER0
+          MOV R3, 1
+          LSL R3, R3, #13
+          LDR R4, [R2]
+          ORR R4, R3
+          STR R4, [R2]
           BBP R3, DMA1_BASE, DMA_CCR3, 1
           STR R12, [R3] @DMA IRQ CH 3 ON
           BBP R3, DMA1_BASE, DMA_CCR3, 0

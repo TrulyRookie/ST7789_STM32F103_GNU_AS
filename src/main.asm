@@ -32,7 +32,74 @@ BSS_REGION_END:
      BL LCD_Init         @ настроить дисплей
 
 MAIN_LOOP:
+     @ stage 0 R 0..31
+     @ stage 1 R 31, G 0..63
+     @ stage 2 R 0 G 63, B 0..31
+     @ stage 3 R0, G 63..0, B 31
+     @ stage 4 R 0..31, G 0, B 31
+     @ r4 - R, R5 - G, r6 - B
+     MOV r4, r11
+     MOV r5, r4
+     MOV r6, r4
+     MOV R1, R4
+     MOV R0, R4
+STAGE0:
+     ADD r4, r12
+     CMP R4, #31
+     IT EQ
+     ADDEQ R1, #1
+     B DRAW
+STAGE1:
+     ADD r5, r12
+     CMP R5, #63
+     IT EQ
+     ADDEQ R1, #1
+     B DRAW
+STAGE2:
+     SUB r4, r12
+     CMP R4, #0
+     IT EQ
+     ADDEQ R1, #1
+     B DRAW
+STAGE3:
+     ADD r6, r12
+     CMP R6, #31
+     IT EQ
+     ADDEQ R1, #1
+     B DRAW
+STAGE4:
+     SUB r5, r12
+     CMP R5, #0
+     IT EQ
+     ADDEQ R1, #1
+     B DRAW
+STAGE5:
+     SUB R4, #1
+     SUB R6, #1
+     CMP R4, #0
+     IT EQ
+     ADDEQ R1, #1
+     B DRAW
 
+DRAW:
+     BFI R0, R4, #11, #5
+     BFI R0, R5, #5, #6
+     BFI R0, R6, #0, #5
+     BL LCD_Clear
+     CMP R1, #0
+     BEQ STAGE0
+     CMP R1, #1
+     BEQ STAGE1
+     CMP R1, #2
+     BEQ STAGE2
+     CMP R1, #3
+     BEQ STAGE3
+     CMP R1, #4
+     BEQ STAGE4
+     CMP R1, #5
+     BEQ STAGE0
+     CMP R1, #6
+     BEQ STAGE5
 B MAIN_LOOP
 
 
