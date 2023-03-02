@@ -285,9 +285,8 @@ SendData_Return:
 
 SendByDMA:
           PUSH  { R0 - R5, LR }
-          LDR  R1, [ R0, - 4 ]    @ Get size word of array
-          UBFX  R2, R1, #16, #2    @ Get data size in power of 2
-          UBFX  R1, R1, #0, #16    @ Get data count
+          LDRH  R1, [ R0, - 4 ]    @ Get size word of array
+          LDRH  R2, [ R0, -2 ]
           LDR R3, =(DMA1+DMA_CMAR3)
           STR R0, [R3]
           CBNZ  R2, DMA_HWORD_SEND    @ if (dataSize > 0) goto  IsHWORD
@@ -319,9 +318,8 @@ DMAArray_Return:
 
 SendArray: @ SendArray(&array)
           PUSH  { R0 - R5, LR }
-          LDR  R1, [ R0, - 4 ]          @ Get size word of array
-          UBFX  R2, R1, #16, #2         @ Get data size in power of 2
-          UBFX  R1, R1, #0, #16         @ Get data count
+          LDRH  R1, [ R0, - 4 ]    @ Get size word of array
+          LDRH  R2, [ R0, -2 ]
           CBNZ  R2, HWORD_send          @ if (dataSize > 0) goto  IsHWORD
           LSL  R1, R1, R2               @ size in bytes dataCount<<dataSize
           @BL SwitchSPIto8bitMode
@@ -358,18 +356,15 @@ SendArray_Return:
 @IN r0 - &array, r1 - count
 .GLOBAL DMA_hSendCircular
 DMA_hSendCircular:
-     push {r0-r4,lr}
+     push {r0-r4,r6,lr}
           BL DataIsParameter
-          LDR R2, =DMA_CIRCULAR_COUNTER
-          STR R1, [R2]
-          @BL SwitchSPIto16bitMode
-@DMA_Circ_label0:
-          @BL SwitchDMAto16bitMode_ch3
+          MOV r6, r1
           BBP R4, DMA1_BASE, DMA_CCR3, 5      @Circular bit
           STR R12, [R4]
-          LDR  R1, [ R0, - 4 ]    @ Get size word of array
-          UBFX  R2, R1, #16, #2    @ Get data size in power of 2
-          UBFX  R1, R1, #0, #16    @ Get data count
+          LDRH  R1, [ R0, - 4 ]    @ Get size word of array
+          LDRH  R2, [ R0, -2 ]
+          @UBFX  R2, R1, #16, #2    @ Get data size in power of 2
+          @UBFX  R1, R1, #0, #16    @ Get data count
           LDR R3, =DMA1
           STR R0, [R3, DMA_CMAR3]
           STR R1, [R3, DMA_CNDTR3]
@@ -385,15 +380,13 @@ DMA_hSendCircular:
           STR R12, [R3] @DMA IRQ CH 3 ON
           BBP R3, DMA1_BASE, DMA_CCR3, 0
           STR R12, [R3] @DMA channel 3 ON
-          LDR R0, =DMA_CIRCULAR_COUNTER
 DMA_CIRC_COUNTER_NOT_NULL:
-          LDR R1, [R0]
-          CMP R1, #0
+          CMP R6, #0 @CMP R1, #0
           BNE DMA_CIRC_COUNTER_NOT_NULL
           BL WAIT_TXE
           BL WAIT_BSY
           BL ReleaseSlave
-     pop {r0-r4,lr}
+     pop {r0-r4,r6,lr}
      BX LR
 .endif
 

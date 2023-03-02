@@ -61,10 +61,10 @@ IRQ_DMA1_Channel3:
                     PUSH {r0,r1,lr}
                     BBP R0, DMA1_BASE, DMA_IFCR, DMA_IFCR_CGIF3_N
                     STR R12, [r0]
-                    LDR R0, =DMA_CIRCULAR_COUNTER
-                    LDR R1, [R0]
-                    SUBS R1, #1
-                    STR R1, [r0]
+                    @LDR R0, =DMA_CIRCULAR_COUNTER
+                    @LDR R1, [R0]
+                    SUBS R6, #1 @SUBS R1, #1
+                    @STR R1, [r0]
                     BNE IRQ_DMA_CH3_exit
                          BBP R3, DMA1_BASE, DMA_CCR3, 1
                          STR R11, [R3] @DMA IRQ CH 3 OFF

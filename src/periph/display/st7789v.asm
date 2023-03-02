@@ -296,6 +296,7 @@ ST_RAMWR_CIRC:
                BL SwitchTo16bitTransferMode
                BL DMA_hSendCircular
           .else
+               BL SwitchTo16bitTransferMode
                mov r2, r1
                mov r1, #1
 RAMWR_Loop:
