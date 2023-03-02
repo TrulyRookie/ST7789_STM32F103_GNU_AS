@@ -292,11 +292,10 @@ ST_RAMWR_CIRC:
           @====PARAMETERS====
      pop {r0,r1,LR}
     PUSH {R0-r5,LR}
+          BL SwitchTo16bitTransferMode
           .if (SPI_DMA_USE==1)
-               BL SwitchTo16bitTransferMode
                BL DMA_hSendCircular
           .else
-               BL SwitchTo16bitTransferMode
                mov r2, r1
                mov r1, #1
 RAMWR_Loop:
@@ -304,6 +303,7 @@ RAMWR_Loop:
                SUBS r2, #1
                BNE RAMWR_Loop
           .endif
+          BL SwitchTo8bitTransferMode
      POP {R0-r5,LR}
      BX LR
 
@@ -328,7 +328,6 @@ ST_TEOFF:
           BL SendData
      pop {r0,r1,LR}
      BX LR
-     BX LR
 
 .global ST_TEON         @ 0x35 tearing effect line on 1byte with 1 bit
 ST_TEON:
@@ -338,7 +337,6 @@ ST_TEON:
           mov r1, #0
           BL SendData
      pop {r0,r1,LR}
-     BX LR
      BX LR
 
 .global ST_MADCTL         @ 0x36 memory data access control 1 byte
@@ -382,7 +380,6 @@ ST_MADCTL:
           mov r1, #1
           BL SendData
      pop {r0,r1,LR}
-     BX LR
      BX LR
 
 .global ST_VSCRSADD         @ 0x37 vertical scrolling start address 2 bytes
