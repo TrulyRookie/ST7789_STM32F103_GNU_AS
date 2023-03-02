@@ -49,6 +49,7 @@ LCD_SetViewport:
 .GLOBAL        LCD_Clear
 LCD_Clear:
                     PUSH            { R0, R1, LR }
+                    BL              SwitchTo8bitTransferMode
                     MOVW            R0, CANVAS_WIDTH - 1    @XE
                     MOVT            R0, 0    @XS
                     MOVW            R1, CANVAS_HEIGHT - 1    @YE
@@ -132,24 +133,11 @@ LCD_Convert24bitColor:
 .GLOBAL        LCD_Init
 LCD_Init:
                     PUSH            { R0 - R5, LR }
+                    BL              SwitchDMAto8bitMode_ch3
                     BL              HardResetDisplay
                     BL              ST_SWRESET
                     MOV             R0, #130
                     BL              SYSTICK_DELAY
-                    MOV             R0, #5
-                    MOV             R1, #0
-                    BL              GetArray
-                    LDR             R0, = 0xc0
-                    LDR             R1, = 0x33
-                    EOR             R2, R2
-                    STRB            R0, [ R5, 0 ]
-                    STRB            R0, [ R5, 1 ]
-                    STRB            R2, [ R5, 2 ]
-                    STRB            R1, [ R5, 3 ]
-                    STRB            R1, [ R5, 4 ]
-                    MOV             R0, R5
-                    BL              ST_PORCTRL
-                    BL              ReleaseArray
                     BL              ST_IDMOFF
                     MOV             R0, RGB_65K_16BIT
                     BL              ST_COLMOD

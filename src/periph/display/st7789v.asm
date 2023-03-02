@@ -293,6 +293,7 @@ ST_RAMWR_CIRC:
      pop {r0,r1,LR}
     PUSH {R0-r5,LR}
           .if (SPI_DMA_USE==1)
+               BL SwitchTo16bitTransferMode
                BL DMA_hSendCircular
           .else
                mov r2, r1

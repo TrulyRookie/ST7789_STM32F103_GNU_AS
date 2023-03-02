@@ -221,6 +221,28 @@ PUSH {R0,LR}
 POP {R0,LR}
 BX LR
 
+.GLOBAL SwitchTo8bitTransferMode
+SwitchTo8bitTransferMode:
+push {lr}
+     BL WAIT_TXE
+     BL WAIT_BSY
+     BL ReleaseSlave
+     BL SwitchSPIto8bitMode
+     BL SwitchDMAto8bitMode_ch3
+pop {lr}
+BX LR
+
+.GLOBAL SwitchTo16bitTransferMode
+SwitchTo16bitTransferMode:
+push {lr}
+     BL WAIT_TXE
+     BL WAIT_BSY
+     BL ReleaseSlave
+     BL SwitchSPIto16bitMode
+     BL SwitchDMAto16bitMode_ch3
+pop {lr}
+BX LR
+
 @**********Data send subroutines*******************
 
 @.DESC     name=SendData type=proc
@@ -242,7 +264,7 @@ Send_Param:
 SendData0:
           CMP  R0, 0xFF       @ if (data is Pointer) SendData_Bulk();
           BHI  SendData_Bulk
-          BL SwitchSPIto8bitMode
+          @BL SwitchSPIto8bitMode
           BL  WAIT_TXE        @ Wait until TXE not setup to 1
           BL  SelectSlave     @ Select LCD to receive data
           LDR  R1, = ( SPI1 + SPI_DR )    @ Take TX buffer address
@@ -270,12 +292,12 @@ SendByDMA:
           STR R0, [R3]
           CBNZ  R2, DMA_HWORD_SEND    @ if (dataSize > 0) goto  IsHWORD
           LSL  R1, R1, R2     @ size in bytes dataCount<<dataSize
-          BL SwitchSPIto8bitMode
-          BL SwitchDMAto8bitMode_ch3
+          @BL SwitchSPIto8bitMode
+          @BL SwitchDMAto8bitMode_ch3
           B DMAArray_Send
 DMA_HWORD_SEND:
-          BL SwitchSPIto16bitMode
-          BL SwitchDMAto16bitMode_ch3
+          @BL SwitchSPIto16bitMode
+          @BL SwitchDMAto16bitMode_ch3
 DMAArray_Send:
           LDR R2, =(DMA1+DMA_CNDTR3)
           STR R1, [R2]
@@ -302,7 +324,7 @@ SendArray: @ SendArray(&array)
           UBFX  R1, R1, #0, #16         @ Get data count
           CBNZ  R2, HWORD_send          @ if (dataSize > 0) goto  IsHWORD
           LSL  R1, R1, R2               @ size in bytes dataCount<<dataSize
-          BL SwitchSPIto8bitMode
+          @BL SwitchSPIto8bitMode
 SendArray_IsByte:
           BL  SelectSlave
           MOV  R2, #0                   @ CYCLE_COUNTER = 0
@@ -316,7 +338,7 @@ SendArray_SendLoopByte:                 @ do{
           BNE  SendArray_SendLoopByte
           B   SendArray_Return          @return;
 HWORD_send:
-          BL SwitchSPIto16bitMode
+          @BL SwitchSPIto16bitMode
 SendArray_IsHword:
           BL  SelectSlave
           MOV  R2, #0
@@ -340,9 +362,9 @@ DMA_hSendCircular:
           BL DataIsParameter
           LDR R2, =DMA_CIRCULAR_COUNTER
           STR R1, [R2]
-          BL SwitchSPIto16bitMode
+          @BL SwitchSPIto16bitMode
 @DMA_Circ_label0:
-          BL SwitchDMAto16bitMode_ch3
+          @BL SwitchDMAto16bitMode_ch3
           BBP R4, DMA1_BASE, DMA_CCR3, 5      @Circular bit
           STR R12, [R4]
           LDR  R1, [ R0, - 4 ]    @ Get size word of array
