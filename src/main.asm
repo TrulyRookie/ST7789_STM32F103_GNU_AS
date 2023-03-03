@@ -42,18 +42,10 @@ BSS_REGION_END:
      BL LCD_Init         @ настроить дисплей
      LDR r7, =#1 @=#0b01010101010101010101010101010101
      MOV r8, r11
-
+     MOV R6, #1
 MAIN_LOOP:
-     START_DWT_CHECK
-     TST r7, #1
-     STOP_DWT_CHECK
-     START_DWT_CHECK
-     CMP r7, #1
-     STOP_DWT_CHECK
-     START_DWT_CHECK
-     RORS R7,R7, #1
-     STOP_DWT_CHECK
-/*     MOV r4, r11
+
+     MOV r4, r11
      MOV r5, r4
      MOV r6, r4
      MOV R1, R4
@@ -116,7 +108,7 @@ DRAW:
      CMP R1, #5
      BEQ STAGE0
      CMP R1, #6
-     BEQ STAGE5  */
+     BEQ STAGE5
 B MAIN_LOOP
 
 
