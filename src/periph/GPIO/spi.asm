@@ -264,9 +264,17 @@ Send_Param:
 SendData0:
           CMP  R0, 0xFF       @ if (data is Pointer) SendData_Bulk();
           BHI  SendData_Bulk
-          @BL SwitchSPIto8bitMode
-          BL  WAIT_TXE        @ Wait until TXE not setup to 1
-          BL  SelectSlave     @ Select LCD to receive data
+@///////////// Wait TXE is 1 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+SendData_TXE_1_0:
+          LDR r3, [r2]
+          CMP r3,#1
+          BNE SendData_TXE_1_0
+@//////////// Select Slave \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          LVR  r2, CS_BB_RESET
+          STR  R12, [ R2 ]
+
+          @BL  SelectSlave     @ Select LCD to receive data
           LDR  R1, = ( SPI1 + SPI_DR )    @ Take TX buffer address
           STRB  R0, [ R1 ]    @ Send data
           BL  SendData_Return    @ Return
@@ -276,10 +284,25 @@ SendData_Bulk:
 .ELSE
           BL  SendArray
 .ENDIF
-          BL  WAIT_TXE
-          BL  WAIT_BSY
+@///////////// Wait TXE is 1 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+SendData_TXE_1_1:
+          LDR r3, [r2]
+          CMP r3,#1
+          BNE SendData_TXE_1_1
+          @BL  WAIT_TXE
+@/////////// Wait BSY is 0 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+SendData_BSY_0_0:
+          LDR r3, [r2]
+          CMP r3,#1
+          BEQ SendData_BSY_0_0
+         @BL  WAIT_BSY
 SendData_Return:
-          BL  ReleaseSlave
+@//////////// Release Slave \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          LVR  r2, CS_BB_RESET
+          STR  R11, [ R2 ]
+          @BL  ReleaseSlave
           POP  { R0 - R4, LR }
           BX  LR
 
@@ -291,13 +314,7 @@ SendByDMA:
           STR R0, [R3]
           CBNZ  R2, DMA_HWORD_SEND    @ if (dataSize > 0) goto  IsHWORD
           LSL  R1, R1, R2     @ size in bytes dataCount<<dataSize
-          @BL SwitchSPIto8bitMode
-          @BL SwitchDMAto8bitMode_ch3
-          B DMAArray_Send
 DMA_HWORD_SEND:
-          @BL SwitchSPIto16bitMode
-          @BL SwitchDMAto16bitMode_ch3
-DMAArray_Send:
           LDR R2, =(DMA1+DMA_CNDTR3)
           STR R1, [R2]
           BL WAIT_TXE
@@ -362,14 +379,23 @@ DMA_hSendCircular:
           BBP R4, DMA1_BASE, DMA_CCR3, 5      @Circular bit
           STR R12, [R4]
           LDRH  R1, [ R0, - 4 ]    @ Get size word of array
-          LDRH  R2, [ R0, -2 ]
+          @LDRH  R2, [ R0, -2 ]
           @UBFX  R2, R1, #16, #2    @ Get data size in power of 2
           @UBFX  R1, R1, #0, #16    @ Get data count
           LDR R3, =DMA1
           STR R0, [R3, DMA_CMAR3]
           STR R1, [R3, DMA_CNDTR3]
-          BL WAIT_TXE
-          BL  SelectSlave
+@///////////// Wait TXE is 1 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+DMACirc_TXE_1_0:
+          LDR r3, [r2]
+          CMP r3,#1
+          BNE DMACirc_TXE_1_0
+          @BL WAIT_TXE
+@//////////// Select Slave \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          LVR  r2, CS_BB_RESET
+          STR  R12, [ R2 ]
+          @BL  SelectSlave
           LDR R2, =NVIC_BASE+NVIC_ISER0
           MOV R3, 1
           LSL R3, R3, #13
@@ -383,9 +409,23 @@ DMA_hSendCircular:
 DMA_CIRC_COUNTER_NOT_NULL:
           CMP R6, #0 @CMP R1, #0
           BNE DMA_CIRC_COUNTER_NOT_NULL
-          BL WAIT_TXE
-          BL WAIT_BSY
-          BL ReleaseSlave
+@///////////// Wait TXE is 1 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+DMACirc_TXE_1_1:
+          LDR r3, [r2]
+          CMP r3,#1
+          BNE DMACirc_TXE_1_1
+          @BL WAIT_TXE
+@/////////// Wait BSY is 0 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+DMACirc_BSY_0_0:
+          LDR r3, [r2]
+          CMP r3,#1
+          BEQ DMACirc_BSY_0_0
+           @BL WAIT_BSY
+@//////////// Release Slave \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+          LVR  r2, CS_BB_RESET
+          STR  R11, [ R2 ]
      pop {r0-r4,r6,lr}
      BX LR
 .endif

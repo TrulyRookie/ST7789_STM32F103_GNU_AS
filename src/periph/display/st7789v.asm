@@ -7,6 +7,7 @@
 
 .include "/src/inc/st7789v.inc"
 .include "/src/inc/spi.inc"
+.include "/src/inc/utils.inc"
 
 .section .asmcode
 
@@ -292,7 +293,9 @@ ST_RAMWR_CIRC:
           @====PARAMETERS====
      pop {r0,r1,LR}
     PUSH {R0-r5,LR}
+          @START_DWT_CHECK
           BL SwitchTo16bitTransferMode
+          @STOP_DWT_CHECK
           .if (SPI_DMA_USE==1)
                BL DMA_hSendCircular
           .else

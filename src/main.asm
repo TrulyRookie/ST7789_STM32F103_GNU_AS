@@ -6,10 +6,20 @@
 .cpu cortex-m3      @ процессор
 .include "/src/inc/st7789v.inc"
 .include "/src/inc/gpio.inc"
+.include "/src/inc/utils.inc"
+
 .section .asmcode
 @ основная программа
 .global Start
 Start:
+     .if (PROFILING_IS_ON == 1)
+          @ SCB_DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // разрешаем использовать DWT
+          LDR r0, =SCB_DEMCR
+          LDR r1, [r0]
+          LDR r2, =CoreDebug_DEMCR_TRCENA
+          ORR r1, r2
+          STR r1, [r0]
+     .endif
      @MOVW r0, #:lower16:BSS_END_ADDRESS
      @MOVT r0, #:upper16:BSS_END_ADDRESS
      EOR r11,r11
@@ -30,19 +40,20 @@ BSS_REGION_END:
      BL GPIO_ClockON
      BL SPI1_Init        @ включить SPI1
      BL LCD_Init         @ настроить дисплей
+     LDR r7, =#1 @=#0b01010101010101010101010101010101
+     MOV r8, r11
 
 MAIN_LOOP:
-     @MOV r0, r12
-     @BL LCD_Clear
-     @LDR r0, =0xFFFF
-     @BL LCD_Clear
-     @ stage 0 R 0..31
-     @ stage 1 R 31, G 0..63
-     @ stage 2 R 0 G 63, B 0..31
-     @ stage 3 R0, G 63..0, B 31
-     @ stage 4 R 0..31, G 0, B 31
-     @ r4 - R, R5 - G, r6 - B
-     MOV r4, r11
+     START_DWT_CHECK
+     TST r7, #1
+     STOP_DWT_CHECK
+     START_DWT_CHECK
+     CMP r7, #1
+     STOP_DWT_CHECK
+     START_DWT_CHECK
+     RORS R7,R7, #1
+     STOP_DWT_CHECK
+/*     MOV r4, r11
      MOV r5, r4
      MOV r6, r4
      MOV R1, R4
@@ -89,7 +100,9 @@ DRAW:
      BFI R0, R4, #11, #5
      BFI R0, R5, #5, #6
      BFI R0, R6, #0, #5
+
      BL LCD_Clear
+
      CMP R1, #0
      BEQ STAGE0
      CMP R1, #1
@@ -103,7 +116,7 @@ DRAW:
      CMP R1, #5
      BEQ STAGE0
      CMP R1, #6
-     BEQ STAGE5
+     BEQ STAGE5  */
 B MAIN_LOOP
 
 

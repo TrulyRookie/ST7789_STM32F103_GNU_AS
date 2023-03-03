@@ -16,12 +16,12 @@ OUT_PATH=compile
 EDIT_PATH=tmp
 
 [GNUConfig]
-AsFile=F:\ArmAsmEdit\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-as.exe
-LdFile=F:\ArmAsmEdit\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-ld.exe
-NmFile=F:\ArmAsmEdit\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-nm.exe
-ObjDumpFile=F:\ArmAsmEdit\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-objdump.exe
-ObjCopyFile=F:\ArmAsmEdit\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-objcopy.exe
-SizeFile=F:\ArmAsmEdit\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-size.exe
+AsFile=C:\MCU\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-as.exe
+LdFile=C:\MCU\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-ld.exe
+NmFile=C:\MCU\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-nm.exe
+ObjDumpFile=C:\MCU\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-objdump.exe
+ObjCopyFile=C:\MCU\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-objcopy.exe
+SizeFile=C:\MCU\ArmAsmEdit\AsmEdit\bin\arm-none-eabi-size.exe
 FileSectionInfoCheckBox=1
 ProjectSymbolsCheckBox=1
 ProjectDAsmCheckBox=1
@@ -31,7 +31,7 @@ ResHEXCheckBox=1
 SaveBeforeCompile=1
 
 [MODULES]
-mod_count=15
+mod_count=16
 mod0=base.ini
 mod1=rcc_stm32f103xxx.ini
 mod2=flash_stm32f103xxx.ini
@@ -47,21 +47,26 @@ mod11=isr_full_LMHDD.ini
 mod12=main_mini.ini
 mod13=ld_stm32f103xBx.ini
 mod14=nvic.ini
+mod15=dwt.ini
 
 [OPENFILES]
-file0name=\inc\spi.inc
+file0name=\inc\base.inc
 file0chs=CP1251
-file1name=\periph\display\st7789v.asm
+file1name=\inc\utils.inc
 file1chs=CP1251
-file2name=\periph\display\st7789v_gl.asm
+file2name=\inc\dwt.inc
 file2chs=CP1251
-file3name=\periph\gpio\dma.asm
+file3name=\inc\spi.inc
 file3chs=CP1251
-file4name=\periph\gpio\spi.asm
+file4name=\periph\display\st7789v.asm
 file4chs=CP1251
-file5name=\main.asm
+file5name=\periph\display\st7789v_gl.asm
 file5chs=CP1251
-file6name=pile\sys.dasm
-file6chs=UTF8
-count=7
-selected=f:\armasmedit\projects\display_st7789\st7789_stm32f103_gnu_as\src\periph\gpio\spi.asm
+file6name=\periph\gpio\dma.asm
+file6chs=CP1251
+file7name=\periph\gpio\spi.asm
+file7chs=CP1251
+file8name=\main.asm
+file8chs=CP1251
+count=9
+selected=c:\mcu\armasmedit\projects\test_project07_clear\src\inc\dwt.inc
