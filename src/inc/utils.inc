@@ -2,6 +2,58 @@
 .include "/src/inc/base.inc"
 .include "/src/inc/gpio.inc"
 
+.equ PROFILING_IS_ON, 1
+
+.if (PROFILING_IS_ON == 1)
+     .equ      SCB_DEMCR,  0xE000EDFC
+     .equ      DWT_CYCCNT, 0xE0001004
+     .equ      DWT_CONTROL, 0xE0001000
+     .equ      CoreDebug_DEMCR_TRCENA, 1<<24
+     .equ      DWT_CTRL_CYCCNTENA, 1
+
+DWT_START:
+PUSH {r0-r3, lr}
+          @ DWT_CYCCNT = 0; // обнуляем значение
+          @ DWT_CONTROL|= DWT_CTRL_CYCCNTENA_Msk; // включаем счётчик
+          LDR r0, =DWT_CYCCNT
+          STR r11, [r0]
+          LDR r1, =DWT_CONTROL
+          LDR r2, [r1]
+          LDR r3, =DWT_CTRL_CYCCNTENA
+          ORR r2, r3
+          STR r2, [r1]
+POP {r0-r3, lr}
+BX LR
+
+DWT_STOP:
+PUSH {r0-r3, lr}
+          @ DWT_CYCCNT = 0; // обнуляем значение
+          @ DWT_CONTROL|= DWT_CTRL_CYCCNTENA_Msk; // включаем счётчик
+          LDR r0, =DWT_CYCCNT
+          LDR r10, [r0]
+          LDR r1, =DWT_CONTROL
+          LDR r2, [r1]
+          LDR r3, =DWT_CTRL_CYCCNTENA
+          EOR r2, r3
+          STR r2, [r1]
+          SUB r10, #29
+POP {r0-r3, lr}
+BX LR
+
+.macro START_DWT_CHECK
+     .if (PROFILING_IS_ON == 1)
+          BL DWT_START
+     .endif
+.endm
+
+.macro STOP_DWT_CHECK
+     .if (PROFILING_IS_ON == 1)
+          BL DWT_STOP
+     .endif
+.endm
+
+.endif
+
 @ 32bit immediate load to register
 .macro MOVD reg, word_val
      MOVW \reg, #:lower16:\word_val
@@ -34,30 +86,6 @@
 .endm
 
 
-.macro BBREG destReg, regPeriphBaseAddr, periphRegShift, regBit
-    LDR \destReg, =PERIPH_BASE+PERIPH_BB_BASE
-    LSL \regPeriphBaseAddr, \regPeriphBaseAddr, #5    @PERIPH_REG_BASE*32
-    ADD \destReg, \destReg, \regPeriphBaseAddr
-    LDR \regPeriphBaseAddr, =\periphRegShift
-    LSL \regPeriphBaseAddr, \regPeriphBaseAddr, #5
-    ADD \destReg, \destReg, \regPeriphBaseAddr        @ PERIPH_BASE+PERIPH_BB_BASE + (regPeriphBaseAddr+periphRegShift)*32
-    LSL \regBit, \regBit, #2
-    ADD \destReg, \destReg, \regBit      @ PERIPH_BASE+PERIPH_BB_BASE + (regPeriphBaseAddr+periphRegShift)*32 + bit*4
-.endm
 
-.macro BBR  destReg, periphRegBaseAddr, periphRegShift, regBit
-    LDR \destReg, =PERIPH_BASE+PERIPH_BB_BASE+(\periphRegBaseAddr+\periphRegShift)*32
-    LSL \regBit, \regBit, #2
-    ADD \destReg, \regBit      @ PERIPH_BASE+PERIPH_BB_BASE + (regPeriphBaseAddr+periphRegShift)*32 + bit*4
-.endm
-
-.macro BBRG destReg, regPeriphBaseAddr, regPeriphShift, regBit
-    LDR \destReg, =PERIPH_BASE+PERIPH_BB_BASE
-    ADD \regPeriphBaseAddr, \regPeriphShift
-    LSL \regPeriphBaseAddr, \regPeriphBaseAddr, #5
-    ADD \destReg, \regPeriphBaseAddr        @ PERIPH_BASE+PERIPH_BB_BASE + (regPeriphBaseAddr+periphRegShift)*32
-    LSL \regBit, \regBit, #2
-    ADD \destReg, \destReg, \regBit      @ PERIPH_BASE+PERIPH_BB_BASE + (regPeriphBaseAddr+periphRegShift)*32 + bit*4
-.endm
 
 
