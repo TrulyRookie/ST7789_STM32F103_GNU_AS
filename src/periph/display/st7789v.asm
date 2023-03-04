@@ -7,6 +7,7 @@
 
 .include "/src/inc/st7789v.inc"
 .include "/src/inc/spi.inc"
+.include "/src/inc/utils.inc"
 
 .section .asmcode
 
@@ -173,12 +174,10 @@ ST_DISPON:
 ST_CASET:
      push {r0,r1,LR}
           @====COMMAND=====
+
           mov r0, #0x2A
           mov r1, #0
           BL SendData
-          @MOV r0, #4
-          @MOV r1, #1
-          @BL GetArray
      pop {r0,r1,LR}
           @====PARAMETERS====
           @               7    6    5    4    3    2    1   0
@@ -211,6 +210,192 @@ ST_CASET:
                BL SendData
           pop {r0-r5,LR}
      BX LR
+@Data send by by Stack
+.global ST_CASET_ALT
+@ 0x2A column address set r0 - XS (start) , r1 - XE (end)
+ST_CASET_ALT:
+     pUSH {r0-r5,LR}
+     MOV R0, SP
+     LVR R2, CS_BB_SET
+     STR R12, [R2]
+     LDR R1, =(SPI1 + SPI_DR)
+@///// COMMAND \\\\\\\
+     LVR R4, DC_BB_RESET
+     STR R12, [R4]
+     BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+ST_CASET_TXE_1_0:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_CASET_TXE_1_0
+
+     MOV R3, 0X2A
+     STRB R3, [R1]
+     LVR R4, DC_BB_SET
+     STR R12, [R4]
+@///// PARAMETERS \\\\\\
+@******* HI XS \\\\\\\\\
+ST_CASET_TXE_1_1:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_CASET_TXE_1_1
+     LDRB R3, [R0, 28]
+     STRB R3, [R1]
+@******* LOW XS \\\\\\\\\
+ST_CASET_TXE_1_2:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_CASET_TXE_1_2
+     LDRB R3, [R0, 32]
+     STRB R3, [R1]
+@******* HI XE \\\\\\\\\
+ST_CASET_TXE_1_3:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_CASET_TXE_1_3
+     LDRB R3, [R0, 36]
+     STRB R3, [R1]
+@******* LOW XE \\\\\\\\\
+ST_CASET_TXE_1_4:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_CASET_TXE_1_4
+     LDRB R3, [R0, 40]
+     STRB R3, [R1]
+BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+ST_CASET_BSY_0:
+     LDR  R1, [ R0 ]
+     CMP  R1, #1
+     BEQ  ST_CASET_BSY_0
+     LVR R2, CS_BB_RESET
+     STR R12, [R2]
+     pop {r0-r5,LR}
+     MOV R0, SP
+     ADD R0, 16
+     MOV SP, R0
+     BX LR
+
+.global ST_CASET_ALT2
+@ 0x2A column address set r0 - XS (start) , r1 - XE (end)
+ST_CASET_ALT2:
+     pUSH {r0-r5,LR}
+     LVR R2, CS_BB_SET
+     STR R12, [R2]
+     LDR R2, =(SPI1 + SPI_DR)
+@///// COMMAND \\\\\\\
+     LVR R4, DC_BB_RESET
+     STR R12, [R4]
+     BBP  R5, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+ST_CASET2_TXE_1_0:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_CASET2_TXE_1_0
+
+     MOV R3, 0X2A
+     STRB R3, [R2]
+     LVR R4, DC_BB_SET
+     STR R12, [R4]
+@///// PARAMETERS \\\\\\
+@******* HI XS \\\\\\\\\
+ST_CASET2_TXE_1_1:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_CASET2_TXE_1_1
+     UBFX R3, R0, #8, #8
+     STRB R3, [R2]
+@******* LOW XS \\\\\\\\\
+ST_CASET2_TXE_1_2:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_CASET2_TXE_1_2
+     UBFX R3, R0, #0, #8
+     STRB R3, [R2]
+@******* HI XE \\\\\\\\\
+ST_CASET2_TXE_1_3:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_CASET2_TXE_1_3
+     UBFX R3, R1, #8, #8
+     STRB R3, [R2]
+@******* LOW XE \\\\\\\\\
+ST_CASET2_TXE_1_4:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_CASET2_TXE_1_4
+     UBFX R3, R1, #0, #8
+     STRB R3, [R2]
+BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+ST_CASET2_BSY_0:
+     LDR  R1, [ R0 ]
+     CMP  R1, #1
+     BEQ  ST_CASET2_BSY_0
+     LVR R2, CS_BB_RESET
+     STR R12, [R2]
+     pop {r0-r5,LR}
+     BX LR
+
+.global ST_RASET_ALT
+@ 0x2b column address set r0 - XS (start) , r1 - XE (end)
+ST_RASET_ALT:
+     push {r0-r5,LR}
+     MOV R0, SP
+     LVR R2, CS_BB_SET
+     STR R12, [R2]
+     LDR R1, =(SPI1 + SPI_DR)
+@///// COMMAND \\\\\\\
+     LVR R4, DC_BB_RESET
+     STR R12, [R4]
+     BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+ST_RASET_TXE_1_0:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_RASET_TXE_1_0
+
+     MOV R3, 0X2B
+     STRB R3, [R1]
+     LVR R4, DC_BB_SET
+     STR R12, [R4]
+@///// PARAMETERS \\\\\\
+@******* HI YS \\\\\\\\\
+ST_RASET_TXE_1_1:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_RASET_TXE_1_1
+     LDRB R3, [R0, 28]
+     STRB R3, [R1]
+@******* LOW YS \\\\\\\\\
+ST_RASET_TXE_1_2:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_RASET_TXE_1_2
+     LDRB R3, [R0, 32]
+     STRB R3, [R1]
+@******* HI YE \\\\\\\\\
+ST_RASET_TXE_1_3:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_RASET_TXE_1_3
+     LDRB R3, [R0, 36]
+     STRB R3, [R1]
+@******* LOW YE \\\\\\\\\
+ST_RASET_TXE_1_4:
+     LDR r3, [r2]
+     CMP r3,#1
+     BNE ST_RASET_TXE_1_4
+     LDRB R3, [R0, 40]
+     STRB R3, [R1]
+BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+ST_RASET_BSY_0:
+     LDR  R1, [ R0 ]
+     CMP  R1, #1
+     BEQ  ST_RASET_BSY_0
+     LVR R2, CS_BB_RESET
+     STR R12, [R2]
+     pop {r0-r5,LR}
+     MOV R0, SP
+     ADD R0, 16
+     MOV SP, R0
+     BX LR
+
 @.DESC     name=ST_RASET type=proc
 @ ***************************************************************************
 @ *                  Установка адресов столбцов                             *
@@ -292,7 +477,9 @@ ST_RAMWR_CIRC:
           @====PARAMETERS====
      pop {r0,r1,LR}
     PUSH {R0-r5,LR}
+          @START_DWT_CHECK
           BL SwitchTo16bitTransferMode
+          @STOP_DWT_CHECK
           .if (SPI_DMA_USE==1)
                BL DMA_hSendCircular
           .else
