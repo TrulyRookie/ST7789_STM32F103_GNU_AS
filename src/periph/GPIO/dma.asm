@@ -39,21 +39,18 @@ DMA1_Init:
           STR  R2, [ R1 ]     @ r2 -> [r1] enable DMA1
      @ DMA ch2 and ch3 setup
           @address RX in periph dma register
-          LDR  R1, = ( DMA1 + DMA_CPAR2 )    @ r1 <- pDMA1_CPAR2
+          LDR  R1, = DMA1                @ r1 <- pDMA1
           LDR  R2, = SPI1 + SPI_DR    @ r2 <- SPI1_DR_ADDR (address IO SPI register)
-          STR  R2, [ R1 ]     @ SPI1_DR_ADDR{r2} -> *pDMA1_CPAR2{[r1]}
+          STR  R2, [ R1, DMA_CPAR2 ]     @ SPI1_DR_ADDR{r2} -> *pDMA1_CPAR2{[r1]}
 
           @address TX in periph dma register
-          LDR  R1, = ( DMA1 + DMA_CPAR3 )
-          STR  R2, [ R1 ]
+          STR  R2, [ R1, DMA_CPAR3 ]
 
      @ ch 3 - SPI1 TX, ch 2 - SPI1 RX
-          LDR  R3, = ( DMA1 + DMA_CCR2 )
           LDR  R4, = DMA_CCR_PL_LOW | DMA_CCR_MSIZE_8B | DMA_CCR_PSIZE_8B | DMA_CCR_MINC
-          STR  R4, [ R3 ]
-          LDR  R3, = ( DMA1 + DMA_CCR3 )
+          STR  R4, [ R1,DMA_CCR2 ]
           LDR  R4, = DMA_CCR_PL_LOW | DMA_CCR_MSIZE_8B | DMA_CCR_PSIZE_8B | DMA_CCR_MINC | DMA_CCR_DIR
-          STR  R4, [ R3 ]
+          STR  R4, [ R1, DMA_CCR3 ]
 
           POP  { R0 - R4, LR }
           BX  LR
@@ -64,12 +61,10 @@ IRQ_DMA1_Channel3:
                     PUSH {r0,r1,lr}
                     BBP R0, DMA1_BASE, DMA_IFCR, DMA_IFCR_CGIF3_N
                     STR R12, [r0]
-                    @STR R12, [r0,4]
-                    @STR R12, [r0,8]
-                    LDR R0, =DMA_CIRCULAR_COUNTER
-                    LDR R1, [R0]
-                    SUBS R1, #1
-                    STR R1, [r0]
+                    @LDR R0, =DMA_CIRCULAR_COUNTER
+                    @LDR R1, [R0]
+                    SUBS R6, #1 @SUBS R1, #1
+                    @STR R1, [r0]
                     BNE IRQ_DMA_CH3_exit
                          BBP R3, DMA1_BASE, DMA_CCR3, 1
                          STR R11, [R3] @DMA IRQ CH 3 OFF

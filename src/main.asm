@@ -32,6 +32,10 @@ BSS_REGION_END:
      BL LCD_Init         @ настроить дисплей
 
 MAIN_LOOP:
+     @MOV r0, r12
+     @BL LCD_Clear
+     @LDR r0, =0xFFFF
+     @BL LCD_Clear
      @ stage 0 R 0..31
      @ stage 1 R 31, G 0..63
      @ stage 2 R 0 G 63, B 0..31
