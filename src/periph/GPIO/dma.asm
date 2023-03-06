@@ -66,12 +66,10 @@ IRQ_DMA1_Channel3:
                     SUBS R6, #1 @SUBS R1, #1
                     @STR R1, [r0]
                     BNE IRQ_DMA_CH3_exit
-                         BBP R3, DMA1_BASE, DMA_CCR3, 1
-                         STR R11, [R3] @DMA IRQ CH 3 OFF
-                         BBP R1, DMA1_BASE, DMA_CCR3, 0
-                         STR R11, [R1] @DMA channel 3 OFF
-                         BBP R1, DMA1_BASE, DMA_CCR3, 5      @Circular bit
-                         STR R11, [R1] @circular off
+                         BBP R0, DMA1_BASE, DMA_CCR3, 0
+                         STR R11, [R0, 1*4] @DMA IRQ CH 3 OFF
+                         STR R11, [R0] @DMA channel 3 OFF
+                         STR R11, [R0, 5*4] @circular off
                     IRQ_DMA_CH3_exit:
                     POP {r0,r1,lr}
                     BX         LR

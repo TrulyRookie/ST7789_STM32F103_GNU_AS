@@ -40,9 +40,6 @@ BSS_REGION_END:
      BL GPIO_ClockON
      BL SPI1_Init        @ включить SPI1
      BL LCD_Init         @ настроить дисплей
-     LDR r7, =#1 @=#0b01010101010101010101010101010101
-     MOV r8, r11
-     MOV R6, #1
 MAIN_LOOP:
 
      MOV r4, r11

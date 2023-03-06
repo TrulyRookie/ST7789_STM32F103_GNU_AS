@@ -209,10 +209,8 @@ SwitchDMAto8bitMode_ch3:
 PUSH {R0,LR}
      BBP R0, DMA1_BASE, DMA_CCR3, 0
      STR R11, [R0] @DMA channel 3 OFF
-     BBP R0, DMA1_BASE, DMA_CCR3, 10      @MSize low bit
-     STR R11, [R0] @8bit memory
-     BBP R0, DMA1_BASE, DMA_CCR3, 8      @PSize low bit
-     STR R11, [R0] @8bit peripheria
+     STR R11, [R0, 10*4] @8bit memory
+     STR R11, [R0, 8*4] @8bit peripheria
 POP {R0,LR}
 BX LR
 
@@ -221,37 +219,63 @@ SwitchDMAto16bitMode_ch3:
 PUSH {R0,LR}
      BBP R0, DMA1_BASE, DMA_CCR3, 0
      STR R11, [R0] @DMA channel 3 OFF
-     BBP R0, DMA1_BASE, DMA_CCR3, 10      @MSize low bit
-     STR R12, [R0] @16bit memory
-     BBP R0, DMA1_BASE, DMA_CCR3, 8      @PSize low bit
-     STR R12, [R0] @16bit peripheria
+     STR R12, [R0,10*4] @16bit memory
+     STR R12, [R0,8*4] @16bit peripheria
 POP {R0,LR}
 BX LR
 
 .GLOBAL SwitchTo8bitTransferMode
 SwitchTo8bitTransferMode:
-push {lr}
-     BL WAIT_TXE
-     BL WAIT_BSY
-     BL ReleaseSlave
-     BL SwitchSPIto8bitMode
+push {r0,r1,lr}
+     BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+ST8B_BSY_0:
+     LDR  R1, [ R0 ]
+     CMP  R1, #1
+     BEQ  ST8B_BSY_0
+
+     LVR  r0, CS_BB_SET
+     STR  R12, [ R0 ]
+
+     BBP  r0, SPI1_BASE, SPI_CR1, 0
+     LDR  R1, [ R0, SPI_CR1_DFF_N*4 ]     @ Take DFF flag state
+     CBZ  R1, SPI_ST8B_RET                @ if (DFF == 0) return;
+     STR  R11, [ R0, SPI_CR1_SPE_N*4 ]    @ SPI off
+     STR  R11, [ R0, SPI_CR1_DFF_N*4 ]    @ clear DFF
+     STR  R12, [ R0, SPI_CR1_SPE_N*4 ]    @ SPI on}
      .if (SPI_DMA_USE==1)
-     BL SwitchDMAto8bitMode_ch3
+     BBP R0, DMA1_BASE, DMA_CCR3, 0
+     STR R11, [R0] @DMA channel 3 OFF
+     STR R11, [R0,10*4] @8bit memory
+     STR R11, [R0, 8*4] @8bit peripheria
      .endif
-pop {lr}
+SPI_ST8B_RET:
+pop {r0,r1,lr}
 BX LR
 
 .GLOBAL SwitchTo16bitTransferMode
 SwitchTo16bitTransferMode:
-push {lr}
-     BL WAIT_TXE
-     BL WAIT_BSY
-     BL ReleaseSlave
-     BL SwitchSPIto16bitMode
+push {r0, r1,lr}
+     BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+ST16B_BSY_0:
+     LDR  R1, [ R0 ]
+     CMP  R1, #1
+     BEQ  ST16B_BSY_0
+     LVR  r0, CS_BB_SET
+     STR  R12, [ R0 ]
+     BBP  r0, SPI1_BASE, SPI_CR1, 0
+     LDR  R1, [ R0, SPI_CR1_DFF_N*4 ]        @ Take DFF flag state
+     CBNZ  R1, SPI_ST16B_RET                 @ if (DFF == 1) return;
+     STR  R11, [ R0, SPI_CR1_SPE_N*4 ]       @ SPI off
+     STR  R12, [ R0, SPI_CR1_DFF_N*4 ]       @ set DFF
+     STR  R12, [ R0, SPI_CR1_SPE_N*4 ]       @ SPI on}
      .if (SPI_DMA_USE==1)
-     BL SwitchDMAto16bitMode_ch3
+     BBP R0, DMA1_BASE, DMA_CCR3, 0
+     STR R11, [R0] @DMA channel 3 OFF
+     STR R12, [R0, 10*4] @16bit memory
+     STR R12, [R0, 8*4] @16bit peripheria
      .endif
-pop {lr}
+SPI_ST16B_RET:
+pop {r0,r1,lr}
 BX LR
 
 @**********Data send subroutines*******************
@@ -281,11 +305,10 @@ SendData_TXE_1_0:
           LDR r3, [r2]
           CMP r3,#1
           BNE SendData_TXE_1_0
-@//////////// Select Slave \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+@///////////// Select Slave  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
           LVR  r2, CS_BB_RESET
           STR  R12, [ R2 ]
 
-          @BL  SelectSlave     @ Select LCD to receive data
           LDR  R1, = ( SPI1 + SPI_DR )    @ Take TX buffer address
           STRB  R0, [ R1 ]    @ Send data
           BL  SendData_Return    @ Return
@@ -410,9 +433,8 @@ DMACirc_TXE_1_0:
           LDR R4, [R2]
           ORR R4, R3
           STR R4, [R2]
-          BBP R3, DMA1_BASE, DMA_CCR3, 1
-          STR R12, [R3] @DMA IRQ CH 3 ON
           BBP R3, DMA1_BASE, DMA_CCR3, 0
+          STR R12, [R3, 1*4] @DMA IRQ CH 3 ON
           STR R12, [R3] @DMA channel 3 ON
 DMA_CIRC_COUNTER_NOT_NULL:
           CMP R6, #0 @CMP R1, #0
@@ -437,4 +459,5 @@ DMACirc_BSY_0_0:
      pop {r0-r4,r6,lr}
      BX LR
 .endif
+
 

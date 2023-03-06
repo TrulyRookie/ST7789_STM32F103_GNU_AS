@@ -160,6 +160,7 @@ ST_DISPON:
           BL SendData
      pop {r0,r1,LR}
      BX LR
+
 @.DESC     name=ST_CASET type=proc
 @ ***************************************************************************
 @ *                  Установка адресов столбцов                             *
@@ -172,111 +173,6 @@ ST_DISPON:
 .global ST_CASET
 @ 0x2A column address set r0 - XS (start) , r1 - XE (end)
 ST_CASET:
-     push {r0,r1,LR}
-          @====COMMAND=====
-
-          mov r0, #0x2A
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
-          @====PARAMETERS====
-          @               7    6    5    4    3    2    1   0
-          @1 HI byte XS  xs15 xs14 xs13 xs12 xs11 xs10 xs9 xs8
-          @2 LO byte XS  xs7  xs6  xs5  xs4  xs3  xs2  xs1 xs0
-          @3 HI byte XE  xe15 xe14 xe13 xe12 xe11 xe10 xe9 xe8
-          @4 LO byte XE  xe7  xe6  xe5  xe4  xe3  xe2  xe1 xe0
-          @ -The value of XS [15:0] and XE [15:0] are referred when RAMWR command comes.
-          @ -Each value represents one column line in the Frame Memory.
-          push {r0-r5,LR}
-               @REV16 R2, R0
-               @MOV R0, R2
-               @REV16 R2, R1
-               @MOV R1, R2
-               @strh r0, [r5]
-               @strh r1, [r5,#2]
-               @MOV r0, r5
-               @BL DMA_Send
-               @BL ReleaseArray
-               MOV r3, r1
-               MOV r2, r0
-               UBFX r0, r2,  #8, #8
-               MOV r1, r12
-               BL SendData
-               UBFX r0, r2, #0, #8
-               BL SendData
-               UBFX r0, r3, #8, #8
-               BL SendData
-               UBFX r0, r3, #0, #8
-               BL SendData
-          pop {r0-r5,LR}
-     BX LR
-@Data send by by Stack
-.global ST_CASET_ALT
-@ 0x2A column address set r0 - XS (start) , r1 - XE (end)
-ST_CASET_ALT:
-     pUSH {r0-r5,LR}
-     MOV R0, SP
-     LVR R2, CS_BB_SET
-     STR R12, [R2]
-     LDR R1, =(SPI1 + SPI_DR)
-@///// COMMAND \\\\\\\
-     LVR R4, DC_BB_RESET
-     STR R12, [R4]
-     BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
-ST_CASET_TXE_1_0:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_CASET_TXE_1_0
-
-     MOV R3, 0X2A
-     STRB R3, [R1]
-     LVR R4, DC_BB_SET
-     STR R12, [R4]
-@///// PARAMETERS \\\\\\
-@******* HI XS \\\\\\\\\
-ST_CASET_TXE_1_1:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_CASET_TXE_1_1
-     LDRB R3, [R0, 28]
-     STRB R3, [R1]
-@******* LOW XS \\\\\\\\\
-ST_CASET_TXE_1_2:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_CASET_TXE_1_2
-     LDRB R3, [R0, 32]
-     STRB R3, [R1]
-@******* HI XE \\\\\\\\\
-ST_CASET_TXE_1_3:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_CASET_TXE_1_3
-     LDRB R3, [R0, 36]
-     STRB R3, [R1]
-@******* LOW XE \\\\\\\\\
-ST_CASET_TXE_1_4:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_CASET_TXE_1_4
-     LDRB R3, [R0, 40]
-     STRB R3, [R1]
-BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
-ST_CASET_BSY_0:
-     LDR  R1, [ R0 ]
-     CMP  R1, #1
-     BEQ  ST_CASET_BSY_0
-     LVR R2, CS_BB_RESET
-     STR R12, [R2]
-     pop {r0-r5,LR}
-     MOV R0, SP
-     ADD R0, 16
-     MOV SP, R0
-     BX LR
-
-.global ST_CASET_ALT2
-@ 0x2A column address set r0 - XS (start) , r1 - XE (end)
-ST_CASET_ALT2:
      pUSH {r0-r5,LR}
      LVR R2, CS_BB_SET
      STR R12, [R2]
@@ -333,69 +229,6 @@ ST_CASET2_BSY_0:
      pop {r0-r5,LR}
      BX LR
 
-.global ST_RASET_ALT
-@ 0x2b column address set r0 - XS (start) , r1 - XE (end)
-ST_RASET_ALT:
-     push {r0-r5,LR}
-     MOV R0, SP
-     LVR R2, CS_BB_SET
-     STR R12, [R2]
-     LDR R1, =(SPI1 + SPI_DR)
-@///// COMMAND \\\\\\\
-     LVR R4, DC_BB_RESET
-     STR R12, [R4]
-     BBP  R2, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
-ST_RASET_TXE_1_0:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_RASET_TXE_1_0
-
-     MOV R3, 0X2B
-     STRB R3, [R1]
-     LVR R4, DC_BB_SET
-     STR R12, [R4]
-@///// PARAMETERS \\\\\\
-@******* HI YS \\\\\\\\\
-ST_RASET_TXE_1_1:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_RASET_TXE_1_1
-     LDRB R3, [R0, 28]
-     STRB R3, [R1]
-@******* LOW YS \\\\\\\\\
-ST_RASET_TXE_1_2:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_RASET_TXE_1_2
-     LDRB R3, [R0, 32]
-     STRB R3, [R1]
-@******* HI YE \\\\\\\\\
-ST_RASET_TXE_1_3:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_RASET_TXE_1_3
-     LDRB R3, [R0, 36]
-     STRB R3, [R1]
-@******* LOW YE \\\\\\\\\
-ST_RASET_TXE_1_4:
-     LDR r3, [r2]
-     CMP r3,#1
-     BNE ST_RASET_TXE_1_4
-     LDRB R3, [R0, 40]
-     STRB R3, [R1]
-BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
-ST_RASET_BSY_0:
-     LDR  R1, [ R0 ]
-     CMP  R1, #1
-     BEQ  ST_RASET_BSY_0
-     LVR R2, CS_BB_RESET
-     STR R12, [R2]
-     pop {r0-r5,LR}
-     MOV R0, SP
-     ADD R0, 16
-     MOV SP, R0
-     BX LR
-
 @.DESC     name=ST_RASET type=proc
 @ ***************************************************************************
 @ *                  Установка адресов столбцов                             *
@@ -405,62 +238,85 @@ ST_RASET_BSY_0:
 @ |  R1 - координаты YE: 15:0                                               |
 @ +-------------------------------------------------------------------------+
 .global ST_RASET
-@ 0x2B row address set 4bytes, r0 - YS (start) , r1 - YE (end)
+@ 0x2A column address set r0 - XS (start) , r1 - XE (end)
 ST_RASET:
-     push {r0,r1,LR}
-          @====COMMAND=====
-          mov r0, #0x2B
-          mov r1, #0
-          BL SendData
-          @MOV r0, #4
-          @MOV r1, #1
-          @BL GetArray
-     pop {r0,r1,LR}
-          @====PARAMETERS====
-          @               7    6    5    4    3    2    1   0
-          @1 HI byte YS  ys15 ys14 ys13 ys12 ys11 ys10 ys9 ys8
-          @2 LO byte YS  ys7  ys6  ys5  ys4  ys3  ys2  ys1 ys0
-          @3 HI byte YE  ye15 ye14 ye13 ye12 ye11 ye10 ye9 ye8
-          @4 LO byte YE  ye7  ye6  ye5  ye4  ye3  ye2  ye1 ye0
-          @ -The value of YS [15:0] and YE [15:0] are referred when RAMWR command comes.
-          @ -Each value represents one column line in the Frame Memory.
-          push {r0-r5,LR}
-               @REV16 R2, R0
-               @MOV R0, R2
-               @REV16 R2, R1
-               @MOV R1, R2
-               @strh r0, [r5]
-               @strh r1, [r5,#2]
-               @MOV r0, r5
-               @BL DMA_Send
-               @BL ReleaseArray
-               MOV r3, r1
-               MOV r2, r0
-               UBFX r0, r2,  #8, #8
-               MOV r1, r12
-               BL SendData
-               UBFX r0, r2, #0, #8
-               BL SendData
-               UBFX r0, r3, #8, #8
-               BL SendData
-               UBFX r0, r3, #0, #8
-               BL SendData
-          pop {r0-r5,LR}
+     pUSH {r0-r5,LR}
+     LVR R2, CS_BB_SET
+     STR R12, [R2]
+     LDR R2, =(SPI1 + SPI_DR)
+@///// COMMAND \\\\\\\
+     LVR R4, DC_BB_RESET
+     STR R12, [R4]
+     BBP  R5, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+ST_RASET2_TXE_1_0:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_RASET2_TXE_1_0
+
+     MOV R3, 0X2B
+     STRB R3, [R2]
+     LVR R4, DC_BB_SET
+     STR R12, [R4]
+@///// PARAMETERS \\\\\\
+@******* HI XS \\\\\\\\\
+ST_RASET2_TXE_1_1:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_RASET2_TXE_1_1
+     UBFX R3, R0, #8, #8
+     STRB R3, [R2]
+@******* LOW XS \\\\\\\\\
+ST_RASET2_TXE_1_2:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_RASET2_TXE_1_2
+     UBFX R3, R0, #0, #8
+     STRB R3, [R2]
+@******* HI XE \\\\\\\\\
+ST_RASET2_TXE_1_3:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_RASET2_TXE_1_3
+     UBFX R3, R1, #8, #8
+     STRB R3, [R2]
+@******* LOW XE \\\\\\\\\
+ST_RASET2_TXE_1_4:
+     LDR r3, [r5]
+     CMP r3,#1
+     BNE ST_RASET2_TXE_1_4
+     UBFX R3, R1, #0, #8
+     STRB R3, [R2]
+BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
+ST_RASET2_BSY_0:
+     LDR  R1, [ R0 ]
+     CMP  R1, #1
+     BEQ  ST_RASET2_BSY_0
+     LVR R2, CS_BB_RESET
+     STR R12, [R2]
+     pop {r0-r5,LR}
      BX LR
 
-.global ST_RAMWR         @ 0x2C memory write 1...N bytes
-@ IN - r0 - array addr
-ST_RAMWR:
-     push {r0,r1,LR}
-          @====COMMAND=====
-          mov r0, #0x2C
-          mov r1, #0
-          BL SendData
-          @====PARAMETERS====
-     pop {r0,r1,LR}
-     PUSH {LR}
-          BL SendData
-     POP {LR}
+.global ST_RAMWR_HWORD         @ 0x2C memory write 1...N bytes
+@ IN - r0 - COLOR
+ST_RAMWR_HWORD:
+     PUSH {R0-R3,LR}
+     LDR R2, =(SPI1 + SPI_DR)
+     BBP  R1, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
+     @******* HI COLOR BYTE \\\\\\\\\
+     ST_RAMWRH_TXE_1_1:
+     LDR r3, [r1]
+     CMP r3,#1
+     BNE ST_RAMWRH_TXE_1_1
+     UBFX R3, R0, #8, #8
+     STRB R3, [R2]
+     @******* LOW COLOR BYTE \\\\\\\\\
+     ST_RAMWRH_TXE_1_2:
+     LDR r3, [r1]
+     CMP r3,#1
+     BNE ST_RAMWRH_TXE_1_2
+     UBFX R3, R0, #0, #8
+     STRB R3, [R2]
+     POP {R0-R3,LR}
      BX LR
 @.DESC      name=ST_RAMWR_CIRC type=proc
 @           Circular LCD memory write
@@ -469,17 +325,8 @@ ST_RAMWR:
 @.ENDDESC
 .global ST_RAMWR_CIRC
 ST_RAMWR_CIRC:
-      push {r0,r1,LR}
-          @====COMMAND=====
-          mov r0, #0x2C
-          mov r1, #0
-          BL SendData
-          @====PARAMETERS====
-     pop {r0,r1,LR}
-    PUSH {R0-r5,LR}
-          @START_DWT_CHECK
+    PUSH {R0-R2,LR}
           BL SwitchTo16bitTransferMode
-          @STOP_DWT_CHECK
           .if (SPI_DMA_USE==1)
                BL DMA_hSendCircular
           .else
@@ -491,7 +338,7 @@ RAMWR_Loop:
                BNE RAMWR_Loop
           .endif
           BL SwitchTo8bitTransferMode
-     POP {R0-r5,LR}
+     POP {R0-R2,LR}
      BX LR
 /*
 .global ST_RAMRD         @ 0x2E memory read (read) byte dummy 1...N bytes
@@ -628,6 +475,7 @@ ST_RAMWRC:
           BL SendData
           @====PARAMETERS====
      pop {r0,r1,LR}
+          mov r1, #1
           BL SendData
      BX LR
 /*
