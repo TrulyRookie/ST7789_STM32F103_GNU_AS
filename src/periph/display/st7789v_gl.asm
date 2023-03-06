@@ -22,7 +22,7 @@ DATA_FOR_NVGAMCTRL: .BYTE           0xd0, 0x04, 0x0c, 0x11, 0x13, 0x2c, 0x3f, 0x
 @ |  R1 - координаты Y: 31:16 - SY, 15:0 - EY                               |
 @ +-------------------------------------------------------------------------+
 @.ENDDESC
-/* .GLOBAL        LCD_SetViewport
+.GLOBAL        LCD_SetViewport
 LCD_SetViewport:
                     PUSH            { R0, R1, LR }
                     MOV             R2, R0
@@ -35,38 +35,11 @@ LCD_SetViewport:
                     UBFX            R0, R2, #16, #16    @YS
                     UBFX            R1, R2, #0, #16    @YE
                     BL              ST_RASET    @(YS,YE)
+                    @RAMWR command send
+                    mov r0, #0x2C
+                    mov r1, #0
+                    BL SendData
                     POP             { R0, R1, LR }
-                    BX              LR   */
-
-.GLOBAL        LCD_SetViewport
-LCD_SetViewport:
-                    PUSH            { R0, R1, R2, R3, LR }
-                    @UBFX            R2, R0, #0, #8
-                    @PUSH            {R2}
-                    @uBFX            R2, R0, #8, #8
-                    @PUSH            {R2}
-                    @UBFX            R2, R0, #16, #8
-                    @PUSH            {R2}
-                    @UBFX            R2, R0, #24, #8
-                    @PUSH            {R2}
-                    START_DWT_CHECK
-                    MOV             R3, R1
-                    MOV             R2, R0
-                    UBFX            R0, R2, #16, #16    @XS
-                    UBFX            R1, R2, #0, #16    @XE
-                    BL              ST_CASET_ALT2    @(XS,XE)
-                    STOP_DWT_CHECK
-                    MOV             R1, R3
-                    UBFX            R2, R1, #0, #8
-                    PUSH            {R2}
-                    UBFX            R2, R1, #8, #8
-                    PUSH            {R2}
-                    UBFX            R2, R1, #16, #8
-                    PUSH            {R2}
-                    UBFX            R2, R1, #24, #8
-                    PUSH            {R2}
-                    BL              ST_RASET_ALT    @(YS,YE)
-                    POP             { R0, R1, R2, R3, LR }
                     BX              LR
 
 @.DESC     name=LCD_Clear type=proc
@@ -87,7 +60,6 @@ LCD_Clear:
                     MOVT            R0, 0    @XS
                     MOVW            R1, CANVAS_HEIGHT - 1    @YE
                     MOVT            R1, 0    @YS
-
                     BL              LCD_SetViewport
 
                     POP             { R0, R1, LR }
@@ -198,5 +170,15 @@ LCD_Init:
                     BL              LCD_Clear
                     POP             { R0 - R5, LR }
                     BX              LR
+
+@ r0 - X, r1 - Y, r2 - color
+.GLOBAL LCD_DrawPixel
+LCD_DrawPixel:
+     PUSH {LR}
+     BL              LCD_SetViewport
+     MOV R0, R2
+     BL              ST_RAMWR_HWORD
+     POP {LR}
+     BX LR
 
 
