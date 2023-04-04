@@ -1,6 +1,7 @@
 @.CharSet=CP1251 (Cyrillic)
 @GNU AS
-
+.ifndef DMA_INC
+     .equ DMA_INC, 1
 @ +------------------------------------------------------------------+
 @ |                          Определения DMA                         |
 @ |                          STM32F103x468B                          |
@@ -150,4 +151,4 @@
 .EQU  DMA_CCR_EN    , 1                            @ Bit 0 EN: Channel enable
 @.END
 
-
+.endif

@@ -1,4 +1,7 @@
 @.CHARSET CP1251
+.ifndef UTILS_INC
+     .equ UTILS_INC, 1
+
 .include "/src/inc/base.inc"
 .include "/src/inc/gpio.inc"
 
@@ -26,7 +29,7 @@ POP {r0-r3, lr}
 BX LR
 
 DWT_STOP:
-PUSH {r0-r3, lr}
+PUSH {r0-r3, R10, lr}
           @ DWT_CYCCNT = 0; // обнуляем значение
           @ DWT_CONTROL|= DWT_CTRL_CYCCNTENA_Msk; // включаем счётчик
           LDR r0, =DWT_CYCCNT
@@ -37,7 +40,7 @@ PUSH {r0-r3, lr}
           EOR r2, r3
           STR r2, [r1]
           SUB r10, #29
-POP {r0-r3, lr}
+POP {r0-r3, R10, lr}
 BX LR
 
 .macro START_DWT_CHECK
@@ -85,7 +88,19 @@ BX LR
      LDR \reg, [\reg]
 .endm
 
+.endif
 
 
+.macro mod rg1, rg2, rg3
+     SDIV \rg1, \rg2, \rg3  @ rg1 = rg2/rg3
+     MUL \rg1, \rg3, \rg1   @ rg1 *= rg3
+     SUB \rg1, \rg2, \rg1   @ rg1 = rg2 - rg1
+.endm
+
+.macro imod rg1, rg2, imm12
+     SDIV \rg1, \rg2, \imm12  @ rg1 = rg2/imm12
+     MUL \rg1, \rg1, \imm12   @ rg1 *= imm12
+     SUB \rg1, \rg2, \rg1   @ rg1 = rg2 - rg1
+.endm
 
 

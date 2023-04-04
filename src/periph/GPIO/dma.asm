@@ -20,7 +20,7 @@
 @==================================================================================
 .INCLUDE   "/src/inc/dma.inc"
 .INCLUDE   "/src/inc/spi.inc"
-.INCLUDE   "/src/inc/gpio.inc"
+.INCLUDE   "/src/inc/nvic.inc"
 .INCLUDE   "/src/inc/rcc.inc"
 .INCLUDE   "/src/inc/utils.inc"
 .GLOBAL DMA_CIRCULAR_COUNTER
@@ -52,6 +52,13 @@ DMA1_Init:
           LDR  R4, = DMA_CCR_PL_LOW | DMA_CCR_MSIZE_8B | DMA_CCR_PSIZE_8B | DMA_CCR_MINC | DMA_CCR_DIR
           STR  R4, [ R1, DMA_CCR3 ]
 
+     @DMA INTERRUPT ENABLE FOR CIRCULAR COUNTER
+          LDR  R0, = NVIC_BASE + NVIC_ISER0
+          LSL  R2, R12, #13
+          LDR  R1, [ R0 ]
+          ORR  R1, R2
+          STR  R1, [ R0 ]
+
           POP  { R0 - R4, LR }
           BX  LR
 
@@ -59,18 +66,15 @@ DMA1_Init:
 .GLOBAL   IRQ_DMA1_Channel3
 IRQ_DMA1_Channel3:
                     PUSH {r0,r1,lr}
-                    BBP R0, DMA1_BASE, DMA_IFCR, DMA_IFCR_CGIF3_N
-                    STR R12, [r0]
-                    @LDR R0, =DMA_CIRCULAR_COUNTER
-                    @LDR R1, [R0]
                     SUBS R6, #1 @SUBS R1, #1
-                    @STR R1, [r0]
                     BNE IRQ_DMA_CH3_exit
                          BBP R0, DMA1_BASE, DMA_CCR3, 0
                          STR R11, [R0, 1*4] @DMA IRQ CH 3 OFF
                          STR R11, [R0] @DMA channel 3 OFF
                          STR R11, [R0, 5*4] @circular off
                     IRQ_DMA_CH3_exit:
+                    BBP R0, DMA1_BASE, DMA_IFCR, DMA_IFCR_CGIF3_N
+                    STR R12, [r0]
                     POP {r0,r1,lr}
                     BX         LR
 
