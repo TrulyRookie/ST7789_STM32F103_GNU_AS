@@ -11,23 +11,23 @@
 
 .section .asmcode
 
+
+
 @ SendData:  @ IN r0 - data byte, r1: 0 - command, 1 - data
 .global ST_NOP          @ 0x00 operation  NO PARAM
 ST_NOP:
-     push {r0,r1,LR}
-          mov r0, #0
-          mov r1, r0
-          BL SendData
-     pop {r0,r1,LR}
+     push {r0,LR}
+          mov r0, OP_NOP
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_SWRESET      @ 0x01 software reset  NO PARAM
 ST_SWRESET:
-     push {r0,r1,LR}
-          mov r0, #0x01
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+     push {r0,LR}
+          mov r0, OP_SWRESET
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 /*
 .global ST_RDDID        @ 0x04 read display id (read) 0byte - dummy, 1..3bytes - data
@@ -64,68 +64,59 @@ ST_RDDSDR:
 */
 .global ST_SLPIN         @ 0x10 sleep in NO PARAM
 ST_SLPIN:
-     push {r0,r1,LR}
-          mov r0, #0x10
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+     push {r0,LR}
+          mov r0, OP_SLPIN
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_SLPOUT         @ 0x11 sleep out NO PARAM
 ST_SLPOUT:
-     push {r0,r1,LR}
-          mov r0, #0x11
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+     push {r0,LR}
+          mov r0, OP_SLPOUT
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_PTLON         @ 0x12 partial mode on NO PARAM
 ST_PTLON:
-     push {r0,r1,LR}
-          mov r0, #0x12
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+     push {r0,LR}
+          mov r0, OP_PTLON
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_NORON         @ 0x13 partial off (normal) NO PARAM
 ST_NORON:
-     push {r0,r1,LR}
-          mov r0, #0x13
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+     push {r0,LR}
+          mov r0, OP_NORON
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_INVOFF         @ 0x20 display inversion off NO PARAM
 ST_INVOFF:
-     push {r0,r1,LR}
-          mov r0, #0x20
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+     push {r0,LR}
+          mov r0, OP_INVOFF
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_INVON         @ 0x21 display inversion on NO PARAM
 ST_INVON:
-     push {r0,r1,LR}
-          mov r0, #0x21
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+     push {r0,LR}
+          mov r0, OP_INVON
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_GAMSET
-@ 0x26 set gamma. IN: r0 - number of curve 1-4
+@ 0x26 set gamma. IN: r1 - number of curve 1-4
 ST_GAMSET:
      push {r0,r1,LR}
           @====COMMAND=====
-          mov r0, #0x26
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
-     push {r0,r1,LR}
+          mov r0, OP_GAMSET
+          BL SendCommand
           @====PARAMETERS====
           @ 7  6  5  4  3   2   1   0
           @ 0  0  0  0 CG3 GC2 GC1 GC0
@@ -134,30 +125,28 @@ ST_GAMSET:
           @ 04h - GC2 Gamma Curve 3 (G2.5)
           @ 08h - GC3 Gamma Curve 4 (G1.0)
           @ r0 - curve number
-          MOV r1, #1
-          SUB r0, r1
-          LSR r0, r1, r0
-          BL SendData
+          MOV r0, r1
+          SUB r0, r12
+          LSR r0, r12, r0
+          BL SendParameter
      pop {r0,r1,LR}
      BX LR
 
 .global ST_DISPOFF        @ 0x28 display off NO PARAM
 ST_DISPOFF:
-     push {r0,r1,LR}
+     push {r0,LR}
           @====COMMAND=====
-          mov r0, #0x28
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+          mov r0, OP_DISPOFF
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_DISPON         @ 0x29 display on NO PARAM
 ST_DISPON:
      push {r0,r1,LR}
           @====COMMAND=====
-          mov r0, #0x29
-          mov r1, #0
-          BL SendData
+          mov r0, OP_DISPON
+          BL SendCommand
      pop {r0,r1,LR}
      BX LR
 
@@ -166,67 +155,21 @@ ST_DISPON:
 @ *                  ”становка адресов столбцов                             *
 @ ***************************************************************************
 @ | ѕараметры:                                                              |
-@ |  R0 - координаты XS: 15:0                                               |
 @ |  R1 - координаты XE: 15:0                                               |
+@ |  R1 - координаты XS: 31:16                                               |
 @ +-------------------------------------------------------------------------+
 @.ENDDESC
 .global ST_CASET
-@ 0x2A column address set r0 - XS (start) , r1 - XE (end)
+@ 0x2A column address set
 ST_CASET:
-     pUSH {r0-r5,LR}
-     LVR R2, CS_BB_SET
-     STR R12, [R2]
-     LDR R2, =(SPI1 + SPI_DR)
+     PUSH {r0-r1,LR}
 @///// COMMAND \\\\\\\
-     LVR R4, DC_BB_RESET
-     STR R12, [R4]
-     BBP  R5, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
-ST_CASET2_TXE_1_0:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_CASET2_TXE_1_0
-
-     MOV R3, 0X2A
-     STRB R3, [R2]
-     LVR R4, DC_BB_SET
-     STR R12, [R4]
+     MOV R0, OP_CASET
+     BL SendCommand
 @///// PARAMETERS \\\\\\
-@******* HI XS \\\\\\\\\
-ST_CASET2_TXE_1_1:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_CASET2_TXE_1_1
-     UBFX R3, R0, #8, #8
-     STRB R3, [R2]
-@******* LOW XS \\\\\\\\\
-ST_CASET2_TXE_1_2:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_CASET2_TXE_1_2
-     UBFX R3, R0, #0, #8
-     STRB R3, [R2]
-@******* HI XE \\\\\\\\\
-ST_CASET2_TXE_1_3:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_CASET2_TXE_1_3
-     UBFX R3, R1, #8, #8
-     STRB R3, [R2]
-@******* LOW XE \\\\\\\\\
-ST_CASET2_TXE_1_4:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_CASET2_TXE_1_4
-     UBFX R3, R1, #0, #8
-     STRB R3, [R2]
-BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
-ST_CASET2_BSY_0:
-     LDR  R1, [ R0 ]
-     CMP  R1, #1
-     BEQ  ST_CASET2_BSY_0
-     LVR R2, CS_BB_RESET
-     STR R12, [R2]
-     pop {r0-r5,LR}
+     MOV R0, R1
+     BL Send4BParameters
+     pop {r0-r1,LR}
      BX LR
 
 @.DESC     name=ST_RASET type=proc
@@ -234,111 +177,28 @@ ST_CASET2_BSY_0:
 @ *                  ”становка адресов столбцов                             *
 @ ***************************************************************************
 @ | ѕараметры:                                                              |
-@ |  R0 - координаты YS: 15:0                                               |
+@ |  R1 - координаты YS: 15:0                                               |
 @ |  R1 - координаты YE: 15:0                                               |
 @ +-------------------------------------------------------------------------+
 .global ST_RASET
 @ 0x2A column address set r0 - XS (start) , r1 - XE (end)
 ST_RASET:
-     pUSH {r0-r5,LR}
-     LVR R2, CS_BB_SET
-     STR R12, [R2]
-     LDR R2, =(SPI1 + SPI_DR)
+     PUSH {r0-r1,LR}
 @///// COMMAND \\\\\\\
-     LVR R4, DC_BB_RESET
-     STR R12, [R4]
-     BBP  R5, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
-ST_RASET2_TXE_1_0:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_RASET2_TXE_1_0
-
-     MOV R3, 0X2B
-     STRB R3, [R2]
-     LVR R4, DC_BB_SET
-     STR R12, [R4]
+     MOV R0, OP_RASET
+     BL SendCommand
 @///// PARAMETERS \\\\\\
-@******* HI XS \\\\\\\\\
-ST_RASET2_TXE_1_1:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_RASET2_TXE_1_1
-     UBFX R3, R0, #8, #8
-     STRB R3, [R2]
-@******* LOW XS \\\\\\\\\
-ST_RASET2_TXE_1_2:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_RASET2_TXE_1_2
-     UBFX R3, R0, #0, #8
-     STRB R3, [R2]
-@******* HI XE \\\\\\\\\
-ST_RASET2_TXE_1_3:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_RASET2_TXE_1_3
-     UBFX R3, R1, #8, #8
-     STRB R3, [R2]
-@******* LOW XE \\\\\\\\\
-ST_RASET2_TXE_1_4:
-     LDR r3, [r5]
-     CMP r3,#1
-     BNE ST_RASET2_TXE_1_4
-     UBFX R3, R1, #0, #8
-     STRB R3, [R2]
-BBP  R0, SPI1_BASE, SPI_SR, SPI_SR_BSY_N
-ST_RASET2_BSY_0:
-     LDR  R1, [ R0 ]
-     CMP  R1, #1
-     BEQ  ST_RASET2_BSY_0
-     LVR R2, CS_BB_RESET
-     STR R12, [R2]
-     pop {r0-r5,LR}
+     MOV R0, R1
+     BL Send4BParameters
+     pop {r0-r1,LR}
      BX LR
 
-.global ST_RAMWR_HWORD         @ 0x2C memory write 1...N bytes
-@ IN - r0 - COLOR
-ST_RAMWR_HWORD:
-     PUSH {R0-R3,LR}
-     LDR R2, =(SPI1 + SPI_DR)
-     BBP  R1, SPI1_BASE, SPI_SR, SPI_SR_TXE_N
-     @******* HI COLOR BYTE \\\\\\\\\
-     ST_RAMWRH_TXE_1_1:
-     LDR r3, [r1]
-     CMP r3,#1
-     BNE ST_RAMWRH_TXE_1_1
-     UBFX R3, R0, #8, #8
-     STRB R3, [R2]
-     @******* LOW COLOR BYTE \\\\\\\\\
-     ST_RAMWRH_TXE_1_2:
-     LDR r3, [r1]
-     CMP r3,#1
-     BNE ST_RAMWRH_TXE_1_2
-     UBFX R3, R0, #0, #8
-     STRB R3, [R2]
-     POP {R0-R3,LR}
-     BX LR
-@.DESC      name=ST_RAMWR_CIRC type=proc
-@           Circular LCD memory write
-@======================================================
-@           IN: R0 - data array, R1 - cycles count
-@.ENDDESC
-.global ST_RAMWR_CIRC
-ST_RAMWR_CIRC:
-    PUSH {R0-R2,LR}
-          BL SwitchTo16bitTransferMode
-          .if (SPI_DMA_USE==1)
-               BL DMA_hSendCircular
-          .else
-               mov r2, r1
-               mov r1, #1
-RAMWR_Loop:
-               BL SendData
-               SUBS r2, #1
-               BNE RAMWR_Loop
-          .endif
-          BL SwitchTo8bitTransferMode
-     POP {R0-R2,LR}
+.global ST_RAMWR
+ST_RAMWR:
+     PUSH {r0,lr}
+     MOV R0, OP_RAMWR
+     BL SendCommand
+     POP {R0,LR}
      BX LR
 /*
 .global ST_RAMRD         @ 0x2E memory read (read) byte dummy 1...N bytes
@@ -355,32 +215,29 @@ ST_VSCRDEF:
 */
 .global ST_TEOFF         @ 0x34 tearing effect line off NO PARAM
 ST_TEOFF:
-     push {r0,r1,LR}
+     push {r0,LR}
           @====COMMAND=====
-          mov r0, #0x34
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+          mov r0, OP_TEOFF
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_TEON         @ 0x35 tearing effect line on 1byte with 1 bit
 ST_TEON:
-     push {r0,r1,LR}
+     push {r0,LR}
           @====COMMAND=====
-          mov r0, #0x35
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+          mov r0, OP_TEON
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_MADCTL         @ 0x36 memory data access control 1 byte
-@ IN r0 - orientation
+@ IN r1 - orientation
 ST_MADCTL:
      push {r0,r1,LR}
           @====COMMAND=====
-          mov r0, #0x36
-          mov r1, #0
-          BL SendData
+          mov r0, OP_MADCTL
+          BL SendCommand
           @====PARAMETERS===
           @  7   6   5   4   3    2  1  0
           @  my  mx  mv  ml  rgb  mh -  -
@@ -409,10 +266,8 @@ ST_MADCTL:
           @ Bit D2- Display Data Latch Data Order
           @    У0Ф = LCD Refresh Left to Right (When MADCTL D2=Ф0Ф)
           @    У1Ф = LCD Refresh Right to Left (When MADCTL D2=Ф1Ф)
-     pop {r0,r1,LR}
-     push {r0,r1,LR}
-          mov r1, #1
-          BL SendData
+          mov r0, r1
+          BL SendParameter
      pop {r0,r1,LR}
      BX LR
 
@@ -422,32 +277,29 @@ ST_VSCRSADD:
 
 .global ST_IDMOFF         @ 0x38 iddle mode off NO PARAM
 ST_IDMOFF:
-     push {r0,r1,LR}
+     push {r0,LR}
           @====COMMAND=====
-          mov r0, #0x38
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+          mov r0, OP_IDMOFF
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_IDMON         @ 0x39 iddle mode on NO PARAM
 ST_IDMON:
-     push {r0,r1,LR}
+     push {r0,LR}
           @====COMMAND=====
-          mov r0, #0x39
-          mov r1, #0
-          BL SendData
-     pop {r0,r1,LR}
+          mov r0, OP_IDMON
+          BL SendCommand
+     pop {r0,LR}
      BX LR
 
 .global ST_COLMOD         @ 0x3A interface pixel format 1byte
-@IN r0 - color mode
+@IN r1 - color mode
 ST_COLMOD:
      push {r0,r1,LR}
      @====COMMAND=====
-          mov r0, #0x3A
-          mov r1, #0
-          BL SendData
+          mov r0, OP_COLMOD
+          BL SendCommand
      @====PARAMETERS====
      @           7 6  5  4  3 2  1  0
      @1 byte XS  0 D6 D5 D4 0 D2 D1 D0
@@ -459,24 +311,19 @@ ST_COLMOD:
      @                                           101 = 16bit/pixel
      @                                           110 = 18bit/pixel
      @                                           111 = 16M truncated
-     pop {r0,r1,LR}
-     push {r0,r1,LR}
-          mov r1, #1
-          BL SendData
+          mov r0, r1
+          BL SendParameter
      pop {r0,r1,LR}
      BX LR
 
 .global ST_RAMWRC         @ 0x3C memory write continue 1..N bytes
 ST_RAMWRC:
-     push {r0,r1,LR}
+     push {r0,LR}
           @====COMMAND=====
-          mov r0, #0x3C
-          mov r1, #0
-          BL SendData
+          mov r0, OP_RAMWRC
+          BL SendCommand
           @====PARAMETERS====
-     pop {r0,r1,LR}
-          mov r1, #1
-          BL SendData
+     pop {r0,LR}
      BX LR
 /*
 .global ST_RAMRDC         @ 0x3E memory read continue  (read) 1byte dummy, 1..N Bytes
@@ -539,7 +386,7 @@ ST_RDID2:
 .global ST_RDID3         @ 0xDC Read ID3 1byte dummy + 1 byte
 ST_RDID3:
      BX LR
-*/
+
 .GLOBAL ST_PORCTRL
 ST_PORCTRL:
      push {r0,r1,LR}
@@ -780,4 +627,4 @@ ST_NVGAMCTRL:
      pop {r0,r1,LR}
      BX LR
 
-
+*/

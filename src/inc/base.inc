@@ -26,7 +26,7 @@
 @.end
 
 @.item CORE
-@.equ CORE_BASE             ,0xE0000000   @ начало раздела Core-регистров
+.equ CORE_BASE             ,0xE0000000   @ начало раздела Core-регистров
 .equ ITM_BASE              ,0xE0000000   @ адреса согласно CMSIS
 .equ DWT_BASE              ,0xE0001000   @ Data Watchpoint and Trace (DWT)
 .equ SCnSCB_BASE           ,0xE000E000   @ System control Register not in SCB

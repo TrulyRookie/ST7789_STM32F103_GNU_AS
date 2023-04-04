@@ -15,21 +15,23 @@
      .align (2)
      TOTAL_FREE_RAM_MEMORY: .word 0x0
      FREE_RAM:.word 0X0
-     @BLOCKS_ARRAY:.word 0x0
 .section .asmcode
      .word FREE_SRAM_START
 
 .global GetFreeMemAmount
 GetFreeMemAmount:    @out - free memory amount stores in TOTAL_FREE_RAM_MEMORY
      PUSH {r0,r1, LR}
-     LDR r0, =FREE_SRAM_START @MOVD r0, FREE_SRAM_START           @first free SRAM address to r0    @r0 = {FREE_SRAM_START = free_memory_address}
-     LDR r1, =FREE_RAM        @MOVD R1, FREE_RAM                  @POINTER TO FREE MEMORY           @r1 = {FREE_RAM* = null}
-     STR R0, [R1]                       @ FREE_RAM = FREE_SRAM_START {FREE_RAM* = free_memory_address}
-     MOV R1, SP                         @ r1 = STACK_TOP_ADDR
-     ADD R1, #200                       @ buffer for 50 stack writes
-     RSB r0, R1                         @ r0 = STACK_TOP - free_memory_address (total free memory amout in bytes)
-     LDR r1, =TOTAL_FREE_RAM_MEMORY     @MOVD r1, TOTAL_FREE_RAM_MEMORY     @ r0 = TOTAL_FREE_RAM_MEMORY {TOTAL_FREE_RAM_MEMORY* = mem_size}
-     STR r0, [r1]                       @ TOTAL_FREE_RAM_MEMORY* = new_mem_size
+     LDR r1, =FREE_RAM                       @POINTER TO FREE MEMORY           @r1 = {FREE_RAM* = null}
+     LDR r0, [r1]
+     CMP r0, #0
+     ITT EQ
+          LDREQ r0, =FREE_SRAM_START         @first free SRAM address to r0    @r0 = {FREE_SRAM_START = free_memory_address}
+          STREQ R0, [R1]                     @ FREE_RAM = FREE_SRAM_START {FREE_RAM* = free_memory_address}
+     MOV R0, SP                              @ r1 = STACK_TOP_ADDR
+     SUB R0, #200                            @ buffer for 50 stack writes
+     RSB R1, R0                              @ r0 = STACK_TOP - free_memory_address (total free memory amout in bytes)
+     LDR r0, =TOTAL_FREE_RAM_MEMORY          @MOVD r1, TOTAL_FREE_RAM_MEMORY     @ r0 = TOTAL_FREE_RAM_MEMORY {TOTAL_FREE_RAM_MEMORY* = mem_size}
+     STR r1, [r0]                            @ TOTAL_FREE_RAM_MEMORY* = new_mem_size
      POP {R0,r1, LR}
      BX LR
 @.DESC     name=GetArray type=proc
@@ -70,6 +72,7 @@ GetArray:
 GetArray_exit:                            @ return array{r5}
      pop {r0-r4,lr}
      BX LR
+
 .global ReleaseArray
 @ IN: r0 - pointer to array
 ReleaseArray:                    @ ReleaseArray(*array)
